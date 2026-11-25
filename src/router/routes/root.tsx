@@ -10,6 +10,7 @@ const RepassosLayout = lazy(() =>
 )
 const RepassosTodayPage = lazy(() => import('~src/pages/repassos/today').then((m) => ({ default: m.Today })))
 const RepassosCalendarPage = lazy(() => import('~src/pages/repassos/calendar').then((m) => ({ default: m.Calendar })))
+const TemariPage = lazy(() => import('~src/pages/temari/view').then((m) => ({ default: m.View })))
 const SettingsPage = lazy(() => import('~src/pages/settings/view').then((m) => ({ default: m.View })))
 const HelpCalendarPage = lazy(() => import('~src/pages/help/calendar').then((m) => ({ default: m.CalendarHelp })))
 const NotFoundPage = lazy(() => import('~src/pages/NotFoundPage').then((m) => ({ default: m.NotFoundPage })))
@@ -51,6 +52,14 @@ const RootRoutesElements = [
         ),
       },
     ],
+  },
+  {
+    path: ROUTES.TEMARI,
+    element: (
+      <SuspenseLoader>
+        <TemariPage />
+      </SuspenseLoader>
+    ),
   },
   {
     path: ROUTES.SETTINGS,

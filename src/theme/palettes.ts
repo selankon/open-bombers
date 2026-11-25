@@ -57,6 +57,19 @@ export const PALETTES = {
     800: '#093F45',
     900: '#062A2E',
   },
+  // Original brand gold. 600 is a touch darker than the original #9E7429 to keep white text above WCAG AA
+  or: {
+    50: '#FAF6EE',
+    100: '#F2E7CF',
+    200: '#E8C882',
+    300: '#D9B565',
+    400: '#C39B4B',
+    500: '#B48733',
+    600: '#956D26',
+    700: '#7E5C20',
+    800: '#5C4318',
+    900: '#3A2A0F',
+  },
   // Indigo
   indi: {
     50: '#EEF0FE',

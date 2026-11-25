@@ -27,6 +27,13 @@ export const NAV_ITEMS: NavItem[] = [
     defaultLabel: 'Repassos',
   },
   {
+    path: ROUTES.TEMARI,
+    match: [ROUTES.TEMARI],
+    icon: icons.temari,
+    labelKey: 'nav.temari',
+    defaultLabel: 'Temari',
+  },
+  {
     path: ROUTES.SETTINGS,
     match: [ROUTES.SETTINGS, ROUTES.HELP.CALENDAR],
     icon: icons.settings,

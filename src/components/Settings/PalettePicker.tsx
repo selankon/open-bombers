@@ -20,13 +20,14 @@ export const PalettePicker = () => {
     blau: t('palette.blau', { defaultValue: 'Blau marí' }),
     petroli: t('palette.petroli', { defaultValue: 'Petroli' }),
     indi: t('palette.indi', { defaultValue: 'Indi' }),
+    or: t('palette.or', { defaultValue: 'Or original' }),
   }
 
   return (
     <SimpleGrid
       role='radiogroup'
       aria-label={t('settings.palette', { defaultValue: 'Color principal' })}
-      columns={{ base: 2, sm: 3, md: 5 }}
+      columns={{ base: 2, sm: 3, md: 6 }}
       spacing={3}
     >
       {PALETTE_IDS.map((id) => {

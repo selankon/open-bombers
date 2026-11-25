@@ -17,7 +17,7 @@ const MetricCard = ({ title, children, footer }: { title: string; children: Reac
   </Card>
 )
 
-const ProgressBar = ({ pct }: { pct: number }) => {
+export const ProgressBar = ({ pct }: { pct: number }) => {
   const reduce = useReducedMotion()
   return (
     <Box h={2} bg='slate.100' _dark={{ bg: 'whiteAlpha.100' }} borderRadius='full' overflow='hidden'>

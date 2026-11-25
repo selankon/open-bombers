@@ -5,6 +5,7 @@ export const ROUTES = {
     TODAY: '/repassos',
     CALENDAR: '/repassos/calendari',
   },
+  TEMARI: '/temari',
   SETTINGS: '/ajustos',
   HELP: {
     CALENDAR: '/ajuda/calendari',

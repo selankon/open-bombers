@@ -43,3 +43,13 @@ export const LEVEL_LAST_SCORES = 3
 
 // Days shown in the "next days" preview of the today view
 export const TODAY_PREVIEW_DAYS = 7
+
+// Official server of the syllabus PDFs (convocatòria ACCÉS 81/26). It sends CORS headers, so the app can fetch them
+export const TEMARI_BASE_URL =
+  'https://interior.gencat.cat/web/.content/home/030_arees_dactuacio/bombers/acces_al_cos_de_bombers/convocatories/convocatories_de_bombers/ACCES-81_26'
+
+// Cache Storage bucket holding the PDFs saved for offline reading
+export const TEMARI_CACHE_NAME = `${APP_SLUG}_temari_v1`
+
+// Pause between files on "download all", so browsers don't drop downloads
+export const TEMARI_DOWNLOAD_DELAY = 400

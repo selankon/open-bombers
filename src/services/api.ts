@@ -19,7 +19,10 @@ import {
   WeekConfig,
 } from '~components/Repassos/types'
 import { BackupFile } from '~components/Backup/types'
-import { BACKUP_VERSION, STORAGE_KEYS } from '~utils/constants'
+import { pdfById, pdfUrl } from '~components/Temari/logic'
+import { ALL_TEMARI_PDFS } from '~src/data/temari-pdfs'
+import { TemariBatchResult, TemariPdf, TemariProgress } from '~components/Temari/types'
+import { BACKUP_VERSION, STORAGE_KEYS, TEMARI_CACHE_NAME } from '~utils/constants'
 import { DayString, IsoDay, isoDayOf, today, weekIdOf, WeekId } from '~utils/dates'
 import { getSlices, readSlice, registerSlice, removeSlice, writeSlice } from './storage'
 
@@ -277,9 +280,73 @@ export const backup = {
   },
 }
 
+const hasCacheStorage = () => typeof caches !== 'undefined'
+
+const openTemariCache = () => {
+  if (!hasCacheStorage()) throw new ApiError('cache storage not supported')
+  return caches.open(TEMARI_CACHE_NAME)
+}
+
+const fetchPdf = async (pdf: TemariPdf) => {
+  const res = await fetch(pdfUrl(pdf))
+  if (!res.ok) throw new ApiError(`pdf ${pdf.id}: ${res.status}`)
+  return res
+}
+
+/**
+ * Syllabus PDFs. They are not a storage slice (too big for localStorage, and not part of backups):
+ * offline copies live in Cache Storage, keyed by their official URL.
+ */
+export const temari = {
+  // Ids of the PDFs saved on this device
+  getSaved: async (): Promise<string[]> => {
+    if (!hasCacheStorage()) return []
+    const cache = await openTemariCache()
+    const urls = new Set((await cache.keys()).map((r) => r.url))
+    return ALL_TEMARI_PDFS.filter((pdf) => urls.has(pdfUrl(pdf))).map((pdf) => pdf.id)
+  },
+  // Download PDFs into the offline cache, one by one. Failures don't stop the batch.
+  save: async (ids: string[], onProgress?: TemariProgress): Promise<TemariBatchResult> => {
+    const cache = await openTemariCache()
+    // Ask the browser not to evict the files under storage pressure (best effort)
+    navigator.storage?.persist?.().catch(() => undefined)
+    const result: TemariBatchResult = { ok: [], failed: [] }
+    for (const [i, id] of ids.entries()) {
+      const pdf = pdfById(id)
+      try {
+        if (!pdf) throw new ApiError(`unknown pdf ${id}`)
+        await cache.put(pdfUrl(pdf), await fetchPdf(pdf))
+        result.ok.push(id)
+      } catch {
+        result.failed.push(id)
+      }
+      onProgress?.(i + 1, ids.length)
+    }
+    return result
+  },
+  remove: async (ids: string[]) => {
+    if (!hasCacheStorage()) return
+    const cache = await openTemariCache()
+    for (const id of ids) {
+      const pdf = pdfById(id)
+      if (pdf) await cache.delete(pdfUrl(pdf))
+    }
+  },
+  // The PDF contents: the offline copy when there is one, otherwise from the official server
+  getBlob: async (id: string): Promise<Blob> => {
+    const pdf = pdfById(id)
+    if (!pdf) throw new ApiError(`unknown pdf ${id}`)
+    const cached = hasCacheStorage() ? await (await openTemariCache()).match(pdfUrl(pdf)) : undefined
+    const res = cached ?? (await fetchPdf(pdf))
+    // Force the type so the browser opens it with its PDF viewer
+    return new Blob([await res.arrayBuffer()], { type: 'application/pdf' })
+  },
+}
+
 export default {
   plan,
   repassos,
   ics,
   backup,
+  temari,
 }
