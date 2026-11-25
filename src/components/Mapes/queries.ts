@@ -1,7 +1,7 @@
 import { QueryClient, useMutation, UseMutationOptions, useQuery, useQueryClient } from '@tanstack/react-query'
 import api from '~src/services/api'
 import { resumOf } from './logic'
-import { MapaInfoParams, MapaMental, MapaResum, NouMapaParams } from './types'
+import { MapaInfoParams, MapaMental, MapaResum, NouMapaParams, SaveContentParams } from './types'
 
 export const MapesKeys = {
   all: ['mapes'],
@@ -43,10 +43,10 @@ export const useCreateMapa = (options?: Options<MapaMental, NouMapaParams>) => {
 }
 
 // Autosave of the editor content
-export const useSaveMapaContent = (options?: Options<MapaMental, Pick<MapaMental, 'id' | 'nodes' | 'traces'>>) => {
+export const useSaveMapaContent = (options?: Options<MapaMental, SaveContentParams>) => {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (params: Pick<MapaMental, 'id' | 'nodes' | 'traces'>) => api.mapes.saveContent(params),
+    mutationFn: (params: SaveContentParams) => api.mapes.saveContent(params),
     onSuccess: (mapa) => storeMapa(queryClient, mapa),
     ...options,
   })

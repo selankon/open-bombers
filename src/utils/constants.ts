@@ -88,4 +88,24 @@ export const MAPA = {
   FIT_PADDING: 48,
   // Pointer movement (px) before a press becomes a drag
   DRAG_THRESHOLD: 4,
+  // Pasted pictures: longest side kept (px) and widest size placed on the map (world px)
+  IMAGE_MAX_PX: 1600,
+  IMAGE_QUALITY: 0.85,
+  IMAGE_WORLD_W: 360,
+  // Stroke widths offered for each tool (world px)
+  GRUIX: {
+    ploma: [2, 4, 7],
+    subratllador: [12, 20, 30],
+    forma: [2, 4, 7],
+  },
+  // Eraser reach (screen px)
+  ERASER_RADIUS: 10,
+  // Export: margin around the content (world px), PNG scale, PDF longest side (px)
+  EXPORT_PADDING: 40,
+  EXPORT_PNG_SCALE: 2,
+  EXPORT_MAX_PX: 8000,
+  EXPORT_PDF_PX: 2400,
 }
+
+export const MAPA_PNG_EXT = '.png'
+export const MAPA_PDF_EXT = '.pdf'

@@ -67,6 +67,18 @@ export const semanticColors = {
   // Mind maps: canvas, dot grid and branch colors (line / node tint)
   'mapa.canvas': { default: '#F7F6F4', _dark: '#0B1120' },
   'mapa.grid': { default: 'rgba(15,23,42,0.10)', _dark: 'rgba(255,255,255,0.08)' },
+  'mapa.tinta': { default: '#1E293B', _dark: '#E2E8F0' },
+  'mapa.tinta.bg': { default: '#F1F5F9', _dark: 'rgba(226,232,240,0.10)' },
+  'mapa.tinta.solid': { default: '#1E293B', _dark: '#334155' },
+  'mapa.primari.solid': { default: 'primary.600', _dark: 'primary.600' },
+  'mapa.blau.solid': { default: '#2563EB', _dark: '#2563EB' },
+  'mapa.verd.solid': { default: '#047857', _dark: '#047857' },
+  'mapa.groc.solid': { default: '#B45309', _dark: '#B45309' },
+  'mapa.vermell.solid': { default: '#BE123C', _dark: '#BE123C' },
+  'mapa.lila.solid': { default: '#6D28D9', _dark: '#6D28D9' },
+  // Text on solid fills, labels on lines, selection outline of drawings
+  'mapa.onSolid': { default: 'white', _dark: 'white' },
+  'mapa.label': { default: 'rgba(255,255,255,0.92)', _dark: 'rgba(21,28,44,0.92)' },
   'mapa.primari': { default: 'primary.500', _dark: 'primary.300' },
   'mapa.primari.bg': { default: 'primary.50', _dark: 'rgba(255,255,255,0.06)' },
   'mapa.blau': { default: '#3B82F6', _dark: '#60A5FA' },

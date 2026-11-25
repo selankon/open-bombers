@@ -2,7 +2,10 @@
   "name": "@bombers/bombers-web",
   "version": "0.1.0",
   "private": true,
-  "engines": { "yarn": "^1.19.x", "node": ">=20.x" },
+  "engines": {
+    "yarn": "^1.19.x",
+    "node": ">=20.x"
+  },
   "packageManager": "yarn@1.22.19",
   "scripts": {
     "dev": "vite",
@@ -23,6 +26,7 @@
     "framer-motion": "^10.18.0",
     "i18next": "^23.16.8",
     "i18next-browser-languagedetector": "^7.2.0",
+    "perfect-freehand": "^1.2.2",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-hook-form": "^7.53.0",

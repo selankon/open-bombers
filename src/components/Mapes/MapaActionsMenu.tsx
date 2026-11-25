@@ -4,6 +4,7 @@ import {
   IconButtonProps,
   Menu,
   MenuButton,
+  MenuDivider,
   MenuItem,
   MenuList,
   Portal,
@@ -16,6 +17,7 @@ import { useNavigate } from 'react-router-dom'
 import { ConfirmDialog } from '~components/Layout/ConfirmDialog'
 import { mapaPath } from '~src/router/routes'
 import { icons } from '~theme/icons'
+import { ExportKind } from './export/useExportMapa'
 import { MapaFormModal } from './MapaFormModal'
 import { useDuplicateMapa, useRemoveMapa, useSaveMapaInfo } from './queries'
 import { MapaResum } from './types'
@@ -27,6 +29,9 @@ type MapaActionsMenuProps = {
   // Runs before deleting (the editor stops its autosave)
   onBeforeRemove?: () => void
   onRemoved?: () => void
+  // Only inside the editor (the export needs the measured ideas)
+  onExport?: (kind: ExportKind) => void
+  exporting?: ExportKind | null
 } & Omit<IconButtonProps, 'aria-label'>
 
 /**
@@ -37,6 +42,8 @@ export const MapaActionsMenu = ({
   onBeforeDuplicate,
   onBeforeRemove,
   onRemoved,
+  onExport,
+  exporting,
   ...props
 }: MapaActionsMenuProps) => {
   const { t } = useTranslation()
@@ -102,6 +109,25 @@ export const MapaActionsMenu = ({
             <MenuItem icon={<Icon as={icons.edit} boxSize={4} />} onClick={form.onOpen}>
               {t('mapes.edit_info', { defaultValue: 'Canvia el títol o el tema' })}
             </MenuItem>
+            {onExport && (
+              <>
+                <MenuItem
+                  icon={<Icon as={icons.exportImage} boxSize={4} />}
+                  onClick={() => onExport('png')}
+                  isDisabled={!!exporting}
+                >
+                  {t('mapes.export_png', { defaultValue: 'Exporta com a imatge (PNG)' })}
+                </MenuItem>
+                <MenuItem
+                  icon={<Icon as={icons.pdf} boxSize={4} />}
+                  onClick={() => onExport('pdf')}
+                  isDisabled={!!exporting}
+                >
+                  {t('mapes.export_pdf', { defaultValue: 'Exporta en PDF (DIN A4)' })}
+                </MenuItem>
+                <MenuDivider />
+              </>
+            )}
             <MenuItem icon={<Icon as={icons.copy} boxSize={4} />} onClick={onDuplicate}>
               {t('mapes.duplicate', { defaultValue: 'Duplica' })}
             </MenuItem>

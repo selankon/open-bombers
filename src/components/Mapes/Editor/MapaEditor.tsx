@@ -1,9 +1,24 @@
 import { Box, Button, Icon, useToast } from '@chakra-ui/react'
-import { KeyboardEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { DragEvent, KeyboardEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ElementNotFound } from '~components/Layout/ElementNotFound'
 import { icons } from '~theme/icons'
 import { MAPA } from '~utils/constants'
+import {
+  contentBounds,
+  eraseAt,
+  findItem,
+  makeTrace,
+  moveItem,
+  onNodes,
+  placeImatge,
+  removeItem,
+  removeNodeContent,
+  resizeImatge,
+  restyleItem,
+} from '../content'
+import { useExportMapa } from '../export/useExportMapa'
+import { imageFromData, imageFromFile } from '../images'
 import {
   addChild,
   addRoot,
@@ -17,17 +32,28 @@ import {
   moveSubtree,
   neighbour,
   newId,
-  removeSubtree,
   setBranchColor,
   subtreeIds,
   toWorld,
   updateNode,
 } from '../logic'
 import { useSaveMapaContent } from '../queries'
-import { MapaColor, MapaMental } from '../types'
-import { Canvas, CanvasHandle } from './Canvas'
+import {
+  BrancaStyle,
+  ItemRef,
+  MapaColor,
+  MapaContingut,
+  MapaForma,
+  MapaMental,
+  MapaNode,
+  MapaTrace,
+  NodeSizes,
+  Tool,
+} from '../types'
+import { Brush, Canvas, CanvasHandle } from './Canvas'
 import { EditorHeader } from './EditorHeader'
-import { Toolbar } from './Toolbar'
+import { StylePanel } from './StylePanel'
+import { ContextBar, ToolRail } from './Toolbar'
 import { useEditorState } from './useEditorState'
 import { useViewport } from './useViewport'
 
@@ -38,30 +64,73 @@ const useStable = <A extends unknown[], R>(fn: (...args: A) => R) => {
   return useCallback((...args: A) => ref.current(...args), [])
 }
 
+type BrushTool = 'ploma' | 'subratllador' | 'forma'
+
+const DEFAULT_BRUSHES: Record<BrushTool, Brush> = {
+  ploma: { color: 'tinta', gruix: MAPA.GRUIX.ploma[1], forma: 'rect' },
+  subratllador: { color: 'groc', gruix: MAPA.GRUIX.subratllador[1], forma: 'rect' },
+  forma: { color: 'tinta', gruix: MAPA.GRUIX.forma[1], forma: 'rect' },
+}
+
+const contentOf = (m: MapaMental): MapaContingut => ({
+  nodes: m.nodes,
+  traces: m.traces,
+  formes: m.formes,
+  imatges: m.imatges,
+})
+
+const isTyping = () => {
+  const el = document.activeElement
+  return !!el && (el.tagName === 'TEXTAREA' || el.tagName === 'INPUT' || (el as HTMLElement).isContentEditable)
+}
+
 /**
- * Mind map editor: canvas, tools, keyboard shortcuts and autosave
+ * Mind map editor: canvas, tools, keyboard shortcuts, pictures, export and autosave
  */
 export const MapaEditor = ({ mapa }: { mapa: MapaMental }) => {
   const { t } = useTranslation()
   const toast = useToast()
-  const { nodes, apply, patch, checkpoint, undo, redo, drop, canUndo, canRedo } = useEditorState(mapa.nodes)
+  // The editor owns the content once opened (later cache updates are its own saves)
+  const initial = useMemo(() => contentOf(mapa), [])
+  const { content, apply, patch, checkpoint, undo, redo, drop, canUndo, canRedo } = useEditorState(initial)
+  const nodes = content.nodes
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [selectedItem, setSelectedItem] = useState<ItemRef | null>(null)
   const [editing, setEditing] = useState<{ id: string; draft: string | null } | null>(null)
+  const [labelEditingId, setLabelEditingId] = useState<string | null>(null)
   const [drag, setDrag] = useState<{ ids: Set<string>; target: string | null } | null>(null)
+  const [tool, setToolState] = useState<Tool>('seleccio')
+  const [brushes, setBrushes] = useState(DEFAULT_BRUSHES)
   // Node just created: its first text joins the creation in the undo history
   const freshId = useRef<string | null>(null)
   const areaRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<CanvasHandle>(null)
+  const fileRef = useRef<HTMLInputElement>(null)
   const { vp, vpRef, setVp, size, zoomBy } = useViewport(areaRef)
-  const nodesRef = useRef(nodes)
-  nodesRef.current = nodes
+  const contentRef = useRef(content)
+  contentRef.current = content
+  const { exportMapa, busy: exporting } = useExportMapa()
 
   const map = useMemo(() => byId(nodes), [nodes])
   const selected = selectedId ? map[selectedId] : undefined
+  const brushTool: BrushTool = tool === 'subratllador' || tool === 'forma' ? tool : 'ploma'
+  const brush = brushes[brushTool]
+
+  // ---- Measured node sizes (batched once per frame) ----
+  const sizesRef = useRef<NodeSizes>({})
+  const [sizes, setSizes] = useState<NodeSizes>({})
+  const sizeFrame = useRef(0)
+  const onSize = useCallback((id: string, w: number, h: number) => {
+    const prev = sizesRef.current[id]
+    if (prev && prev.w === w && prev.h === h) return
+    sizesRef.current = { ...sizesRef.current, [id]: { w, h } }
+    cancelAnimationFrame(sizeFrame.current)
+    sizeFrame.current = requestAnimationFrame(() => setSizes(sizesRef.current))
+  }, [])
 
   // ---- Autosave ----
   const { mutateAsync: saveContent } = useSaveMapaContent()
-  const savedRef = useRef(mapa.nodes)
+  const savedRef = useRef(initial)
   const timer = useRef<ReturnType<typeof setTimeout>>()
   // The map is being deleted: nothing more to save
   const removed = useRef(false)
@@ -72,13 +141,14 @@ export const MapaEditor = ({ mapa }: { mapa: MapaMental }) => {
 
   const flush = useStable(async () => {
     clearTimeout(timer.current)
-    const current = nodesRef.current
+    const current = contentRef.current
     if (removed.current || current === savedRef.current) return
+    const previous = savedRef.current
     savedRef.current = current
     try {
-      await saveContent({ id: mapa.id, nodes: current, traces: mapa.traces })
+      await saveContent({ id: mapa.id, ...current })
     } catch {
-      savedRef.current = mapa.nodes
+      savedRef.current = previous
       if (!toast.isActive('mapa-save-error')) {
         toast({
           id: 'mapa-save-error',
@@ -96,10 +166,10 @@ export const MapaEditor = ({ mapa }: { mapa: MapaMental }) => {
 
   // Save a moment after the last change
   useEffect(() => {
-    if (nodes === savedRef.current) return
+    if (content === savedRef.current) return
     clearTimeout(timer.current)
     timer.current = setTimeout(flush, MAPA.SAVE_DELAY)
-  }, [nodes, flush])
+  }, [content, flush])
 
   // Save right away when leaving the editor or hiding the app
   useEffect(() => {
@@ -113,14 +183,14 @@ export const MapaEditor = ({ mapa }: { mapa: MapaMental }) => {
 
   // ---- Viewport ----
   const fitted = useRef(false)
-  const fit = useStable(() => setVp(fitViewport(nodesRef.current, size.w, size.h)))
+  const fit = useStable(() => setVp(fitViewport(contentBounds(contentRef.current, sizesRef.current), size.w, size.h)))
 
   // Show the whole map once the canvas has a size (or its main idea, when the whole map would be too small)
   useEffect(() => {
     if (fitted.current || !size.w || !size.h) return
     fitted.current = true
-    const all = fitViewport(nodesRef.current, size.w, size.h)
-    const root = nodesRef.current.find((n) => !n.pare)
+    const all = fitViewport(contentBounds(contentRef.current, sizesRef.current), size.w, size.h)
+    const root = contentRef.current.nodes.find((n) => !n.pare)
     if (all.k >= MAPA.READABLE_ZOOM || !root) return setVp(all)
     setVp(centerOn({ x: 0, y: 0, k: MAPA.READABLE_ZOOM }, root.x, root.y, size.w, size.h))
   }, [size, setVp])
@@ -131,22 +201,51 @@ export const MapaEditor = ({ mapa }: { mapa: MapaMental }) => {
     if (isOffscreen(vpRef.current, selected.x, selected.y, size.w, size.h)) {
       setVp((v) => centerOn(v, selected.x, selected.y, size.w, size.h))
     }
-    // Only when the selection changes, not on every move of the node
   }, [selectedId])
 
-  // ---- Actions ----
+  // ---- Selection and tools ----
+  const keepFocus = () =>
+    requestAnimationFrame(() => {
+      const active = document.activeElement
+      if (!active || active === document.body) canvasRef.current?.focus()
+    })
+
   const select = useStable((id: string | null) => {
     setSelectedId(id)
+    if (id) setSelectedItem(null)
     if (editing && editing.id !== id) setEditing(null)
   })
 
+  const selectItem = useStable((ref: ItemRef | null) => {
+    setSelectedItem(ref)
+    if (ref) {
+      setSelectedId(null)
+      setEditing(null)
+    }
+  })
+
+  const setTool = useStable((next: Tool) => {
+    setToolState(next)
+    setSelectedItem(null)
+    setEditing(null)
+    setLabelEditingId(null)
+    if (next !== 'seleccio') setSelectedId(null)
+    canvasRef.current?.focus()
+  })
+
+  const setBrush = useStable((p: Partial<Brush>) =>
+    setBrushes((b) => ({ ...b, [brushTool]: { ...b[brushTool], ...p } }))
+  )
+
   const startEdit = useStable((id: string, draft: string | null = null) => {
     setSelectedId(id)
+    setSelectedItem(null)
     setEditing({ id, draft })
   })
 
-  const createAndEdit = (id: string, make: (ns: typeof nodes) => typeof nodes) => {
-    apply(make)
+  // ---- Ideas ----
+  const createAndEdit = (id: string, make: (ns: MapaNode[]) => MapaNode[]) => {
+    apply(onNodes(make))
     freshId.current = id
     startEdit(id)
   }
@@ -165,27 +264,20 @@ export const MapaEditor = ({ mapa }: { mapa: MapaMental }) => {
 
   const removeNode = useStable((id: string) => {
     const parent = map[id]?.pare ?? null
-    apply((ns) => removeSubtree(ns, id))
+    apply((c) => removeNodeContent(c, id))
     setEditing(null)
     setSelectedId(parent)
     keepFocus()
   })
 
-  // When the text box closes the focus falls to the page: bring it back to the canvas for the shortcuts
-  const keepFocus = () =>
-    requestAnimationFrame(() => {
-      const active = document.activeElement
-      if (!active || active === document.body) canvasRef.current?.focus()
-    })
-
   const commit = useStable((id: string, text: string, next?: 'child' | 'sibling') => {
     if (editing?.id !== id) return
     setEditing(null)
     keepFocus()
-    const node = nodesRef.current.find((n) => n.id === id)
+    const node = contentRef.current.nodes.find((n) => n.id === id)
     if (!node) return
     const value = text.trim()
-    const hasChildren = nodesRef.current.some((n) => n.pare === id)
+    const hasChildren = contentRef.current.nodes.some((n) => n.pare === id)
     if (freshId.current === id) {
       freshId.current = null
       if (!value && !hasChildren) {
@@ -194,9 +286,9 @@ export const MapaEditor = ({ mapa }: { mapa: MapaMental }) => {
         setSelectedId(node.pare)
         return
       }
-      patch((ns) => updateNode(ns, id, { text: value }))
+      patch(onNodes((ns) => updateNode(ns, id, { text: value })))
     } else if (value !== node.text) {
-      apply((ns) => updateNode(ns, id, { text: value }))
+      apply(onNodes((ns) => updateNode(ns, id, { text: value })))
     }
     if (next === 'child') addChildOf(id)
     else if (next === 'sibling') addSiblingOf(id)
@@ -205,7 +297,7 @@ export const MapaEditor = ({ mapa }: { mapa: MapaMental }) => {
   const cancel = useStable((id: string) => {
     if (editing?.id !== id) return
     setEditing(null)
-    const node = nodesRef.current.find((n) => n.id === id)
+    const node = contentRef.current.nodes.find((n) => n.id === id)
     if (freshId.current === id) {
       freshId.current = null
       drop()
@@ -216,32 +308,157 @@ export const MapaEditor = ({ mapa }: { mapa: MapaMental }) => {
 
   const toggleFold = useStable((id: string) => {
     const node = map[id]
-    if (node) apply((ns) => updateNode(ns, id, { plegat: !node.plegat }))
+    if (node) apply(onNodes((ns) => updateNode(ns, id, { plegat: !node.plegat })))
   })
 
-  const setColor = useStable((c: MapaColor) => selectedId && apply((ns) => setBranchColor(ns, selectedId, c)))
+  const setColor = useStable((c: MapaColor) => selectedId && apply(onNodes((ns) => setBranchColor(ns, selectedId, c))))
 
+  const setNodeStyle = useStable((p: Partial<Pick<MapaNode, 'forma' | 'emplenat' | 'mida'>>) => {
+    if (selectedId) apply(onNodes((ns) => updateNode(ns, selectedId, p)))
+  })
+
+  const setBranca = (id: string, p: Partial<BrancaStyle>) =>
+    apply(
+      onNodes((ns) => {
+        const node = ns.find((n) => n.id === id)
+        if (!node) return ns
+        const branca: BrancaStyle = { ...node.branca, ...p }
+        if (!branca.text?.trim()) delete branca.text
+        if (!branca.fletxa) delete branca.fletxa
+        return updateNode(ns, id, { branca: Object.keys(branca).length ? branca : undefined })
+      })
+    )
+
+  // ---- Labels on lines ----
+  const editLabel = useStable((id: string) => {
+    if (!contentRef.current.nodes.find((n) => n.id === id)?.pare) return
+    setSelectedId(id)
+    setLabelEditingId(id)
+  })
+  const commitLabel = useStable((id: string, text: string) => {
+    setLabelEditingId(null)
+    if ((map[id]?.branca?.text ?? '') !== text.trim()) setBranca(id, { text: text.trim() })
+    keepFocus()
+  })
+  const cancelLabel = useStable(() => {
+    setLabelEditingId(null)
+    keepFocus()
+  })
+
+  // ---- Dragging ----
   const onDragStart = useStable((id: string) => {
     checkpoint()
     setSelectedId(id)
-    setDrag({ ids: subtreeIds(nodesRef.current, id), target: null })
+    setDrag({ ids: subtreeIds(contentRef.current.nodes, id), target: null })
   })
   const onDragMove = useStable((id: string, dx: number, dy: number, target: string | null) => {
-    patch((ns) => moveSubtree(ns, id, dx, dy))
+    patch(onNodes((ns) => moveSubtree(ns, id, dx, dy)))
     setDrag((d) => (d && d.target !== target ? { ...d, target } : d))
   })
   const onDragEnd = useStable((id: string, target: string | null) => {
-    if (target) patch((ns) => attachTo(ns, id, target))
+    if (target) patch(onNodes((ns) => attachTo(ns, id, target)))
     setDrag(null)
   })
+  const onItemDragStart = useStable(() => checkpoint())
+  const onItemDragMove = useStable((ref: ItemRef, dx: number, dy: number) => patch((c) => moveItem(c, ref, dx, dy)))
+  const onResize = useStable((id: string, w: number, h: number) => patch((c) => resizeImatge(c, id, w, h)))
 
   const onBackgroundDoubleClick = useStable((x: number, y: number) => {
     const id = newId()
     createAndEdit(id, (ns) => addRoot(ns, x, y, '', id).nodes)
   })
 
+  // ---- Drawing ----
+  const onAddTrace = useStable((punts: [number, number, number][], pressio: boolean) => {
+    if (tool !== 'ploma' && tool !== 'subratllador') return
+    const base: Omit<MapaTrace, 'node' | 'punts'> = {
+      id: newId(),
+      eina: tool,
+      color: brush.color,
+      gruix: brush.gruix,
+      ...(pressio ? { pressio: true } : {}),
+    }
+    apply((c) => ({ ...c, traces: [...c.traces, makeTrace(base, punts, c.nodes, sizesRef.current)] }))
+  })
+
+  const onAddForma = useStable((f: Omit<MapaForma, 'id'>) => {
+    const round = (v: number) => Math.round(v * 10) / 10
+    const forma: MapaForma = { ...f, id: newId(), x1: round(f.x1), y1: round(f.y1), x2: round(f.x2), y2: round(f.y2) }
+    apply((c) => ({ ...c, formes: [...c.formes, forma] }))
+  })
+
+  // The eraser makes one undo step, created at the first stroke it really removes
+  const erasing = useRef(false)
+  const onEraseStart = useStable(() => (erasing.current = false))
+  const onErase = useStable((x: number, y: number, r: number) => {
+    const next = eraseAt(contentRef.current, x, y, r)
+    if (next === contentRef.current) return
+    if (!erasing.current) {
+      erasing.current = true
+      checkpoint()
+    }
+    patch((c) => eraseAt(c, x, y, r))
+  })
+
+  // ---- Drawings selected with the selection tool ----
+  const item = selectedItem ? findItem(content, selectedItem) : undefined
+  // An undo can remove the selected drawing
+  const activeItem = item ? selectedItem : null
+  const restyle = useStable(
+    (p: { color?: MapaColor; gruix?: number }) => selectedItem && apply((c) => restyleItem(c, selectedItem, p))
+  )
+  const removeSelectedItem = useStable(() => {
+    if (!selectedItem) return
+    apply((c) => removeItem(c, selectedItem))
+    setSelectedItem(null)
+    keepFocus()
+  })
+
+  // ---- Pictures ----
+  const insertImage = useStable(async (file: Blob) => {
+    try {
+      const img = await imageFromFile(file)
+      const place = placeImatge(vpRef.current, size, img.w, img.h)
+      const id = newId()
+      apply((c) => ({ ...c, imatges: [...c.imatges, { id, src: img.src, ...place }] }))
+      setToolState('seleccio')
+      selectItem({ kind: 'imatge', id })
+    } catch {
+      toast({
+        title: t('mapes.image_error', { defaultValue: 'No s’ha pogut afegir la imatge' }),
+        description: t('mapes.image_error_desc', {
+          defaultValue: 'Prova amb una altra imatge (PNG, JPG o WebP) o fes-ne una captura de pantalla.',
+        }),
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      })
+    }
+  })
+
+  // Paste pictures from the clipboard (Ctrl+V) anywhere in the editor
+  useEffect(() => {
+    const onPaste = (e: ClipboardEvent) => {
+      if (isTyping()) return
+      const file = imageFromData(e.clipboardData)
+      if (!file) return
+      e.preventDefault()
+      insertImage(file)
+    }
+    document.addEventListener('paste', onPaste)
+    return () => document.removeEventListener('paste', onPaste)
+  }, [insertImage])
+
+  const onDrop = (e: DragEvent) => {
+    const file = imageFromData(e.dataTransfer)
+    if (!file) return
+    e.preventDefault()
+    insertImage(file)
+  }
+
+  // ---- Keyboard ----
   const onKeyDown = useStable((e: KeyboardEvent) => {
-    if (editing) return
+    if (editing || labelEditingId) return
     const mod = e.ctrlKey || e.metaKey
     const key = e.key.toLowerCase()
     if (mod && key === 'z') {
@@ -254,6 +471,28 @@ export const MapaEditor = ({ mapa }: { mapa: MapaMental }) => {
     }
     if (mod || e.altKey) return
     const handled = () => e.preventDefault()
+    if (e.key === 'Escape') {
+      if (tool !== 'seleccio') return setTool('seleccio')
+      setSelectedItem(null)
+      return setSelectedId(null)
+    }
+    if (selectedItem && (e.key === 'Delete' || e.key === 'Backspace')) {
+      handled()
+      return removeSelectedItem()
+    }
+    switch (e.key) {
+      case '+':
+      case '=':
+        handled()
+        return zoomBy(1)
+      case '-':
+        handled()
+        return zoomBy(-1)
+      case '0':
+        handled()
+        return fit()
+    }
+    if (tool !== 'seleccio') return
     switch (e.key) {
       case 'Tab':
         handled()
@@ -286,18 +525,6 @@ export const MapaEditor = ({ mapa }: { mapa: MapaMental }) => {
         if (next) setSelectedId(next)
         return
       }
-      case 'Escape':
-        return setSelectedId(null)
-      case '+':
-      case '=':
-        handled()
-        return zoomBy(1)
-      case '-':
-        handled()
-        return zoomBy(-1)
-      case '0':
-        handled()
-        return fit()
     }
     // Typing on a selected idea starts editing it with that character
     if (selectedId && e.key.length === 1) {
@@ -306,6 +533,13 @@ export const MapaEditor = ({ mapa }: { mapa: MapaMental }) => {
     }
   })
 
+  const itemWidths =
+    selectedItem?.kind === 'trace'
+      ? MAPA.GRUIX[(item as MapaTrace | undefined)?.eina ?? 'ploma']
+      : selectedItem?.kind === 'forma'
+        ? MAPA.GRUIX.forma
+        : []
+
   return (
     <Box
       ref={areaRef}
@@ -313,35 +547,61 @@ export const MapaEditor = ({ mapa }: { mapa: MapaMental }) => {
       h='calc(100dvh - 56px - env(safe-area-inset-top))'
       // clip (not hidden): focusing popovers or text boxes must never scroll the editor
       sx={{ overflow: 'clip' }}
+      onDragOver={(e) => e.preventDefault()}
+      onDrop={onDrop}
     >
       <Canvas
         ref={canvasRef}
-        nodes={nodes}
+        content={content}
+        sizes={sizes}
         vp={vp}
         vpRef={vpRef}
         setVp={setVp}
+        tool={tool}
+        brush={brush}
         selectedId={selectedId}
+        selectedItem={activeItem}
         editingId={editing?.id ?? null}
         editDraft={editing?.draft ?? null}
+        labelEditingId={labelEditingId}
         dragIds={drag?.ids ?? null}
         dropTarget={drag?.target ?? null}
+        onSize={onSize}
         onSelect={select}
+        onSelectItem={selectItem}
         onTapSelected={startEdit}
         onEdit={startEdit}
         onDragStart={onDragStart}
         onDragMove={onDragMove}
         onDragEnd={onDragEnd}
+        onItemDragStart={onItemDragStart}
+        onItemDragMove={onItemDragMove}
+        onResizeStart={checkpoint}
+        onResize={onResize}
         onToggleFold={toggleFold}
         onBackgroundDoubleClick={onBackgroundDoubleClick}
         onCommit={commit}
         onCancel={cancel}
+        onEditLabel={editLabel}
+        onCommitLabel={commitLabel}
+        onCancelLabel={cancelLabel}
+        onAddTrace={onAddTrace}
+        onAddForma={onAddForma}
+        onEraseStart={onEraseStart}
+        onErase={onErase}
         onKeyDown={onKeyDown}
         ariaLabel={t('mapes.canvas_label', { defaultValue: 'Mapa mental {{title}}', title: mapa.titol })}
       />
 
-      <EditorHeader mapa={mapa} onBeforeLeave={flush} onBeforeRemove={stopSaving} />
+      <EditorHeader
+        mapa={mapa}
+        onBeforeLeave={flush}
+        onBeforeRemove={stopSaving}
+        onExport={(kind) => exportMapa(kind, mapa.titol, contentRef.current, sizesRef.current)}
+        exporting={exporting}
+      />
 
-      {!nodes.length && (
+      {!nodes.length && !content.traces.length && !content.formes.length && !content.imatges.length && (
         <Box
           position='absolute'
           inset={0}
@@ -366,17 +626,49 @@ export const MapaEditor = ({ mapa }: { mapa: MapaMental }) => {
         </Box>
       )}
 
-      <Toolbar
+      <ToolRail tool={tool} onTool={setTool} onImage={() => fileRef.current?.click()} />
+      <input
+        ref={fileRef}
+        type='file'
+        accept='image/*'
+        hidden
+        onChange={(e) => {
+          const file = e.target.files?.[0]
+          if (file) insertImage(file)
+          e.target.value = ''
+        }}
+      />
+
+      <ContextBar
+        tool={tool}
+        brush={brush}
+        onBrush={setBrush}
         hasSelection={!!selected}
-        color={selected ? colorOf(map, selected.id) : null}
+        itemSelected={activeItem?.kind ?? null}
+        itemColor={(item as { color?: MapaColor } | undefined)?.color ?? null}
+        itemGruix={(item as { gruix?: number } | undefined)?.gruix ?? null}
+        itemWidths={itemWidths}
+        onItemStyle={restyle}
+        stylePanel={
+          selected && (
+            <StylePanel
+              node={selected}
+              color={colorOf(map, selected.id)}
+              isRoot={!selected.pare}
+              onColor={setColor}
+              onNode={setNodeStyle}
+              onBranca={(p) => setBranca(selected.id, p)}
+              onEditLabel={() => editLabel(selected.id)}
+            />
+          )
+        }
         canUndo={canUndo}
         canRedo={canRedo}
         zoom={vp.k}
         onAddChild={() => addChildOf(selectedId)}
         onAddSibling={() => selectedId && addSiblingOf(selectedId)}
         onEdit={() => selectedId && startEdit(selectedId)}
-        onDelete={() => selectedId && removeNode(selectedId)}
-        onColor={setColor}
+        onDelete={() => (activeItem ? removeSelectedItem() : selectedId && removeNode(selectedId))}
         onUndo={undo}
         onRedo={redo}
         onZoomIn={() => zoomBy(1)}

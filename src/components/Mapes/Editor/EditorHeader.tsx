@@ -23,6 +23,7 @@ import { ROUTES } from '~src/router/routes'
 import { icons } from '~theme/icons'
 import { linkLabel } from '../logic'
 import { MapaActionsMenu } from '../MapaActionsMenu'
+import { ExportKind } from '../export/useExportMapa'
 import { MapaMental } from '../types'
 
 const Shortcut = ({ keys, label }: { keys: string[]; label: string }) => (
@@ -96,9 +97,11 @@ type EditorHeaderProps = {
   mapa: MapaMental
   onBeforeLeave: () => Promise<void>
   onBeforeRemove: () => void
+  onExport: (kind: ExportKind) => void
+  exporting: ExportKind | null
 }
 
-export const EditorHeader = ({ mapa, onBeforeLeave, onBeforeRemove }: EditorHeaderProps) => {
+export const EditorHeader = ({ mapa, onBeforeLeave, onBeforeRemove, onExport, exporting }: EditorHeaderProps) => {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const { structure } = useStudyData()
@@ -154,6 +157,8 @@ export const EditorHeader = ({ mapa, onBeforeLeave, onBeforeRemove }: EditorHead
           mapa={mapa}
           onBeforeDuplicate={onBeforeLeave}
           onBeforeRemove={onBeforeRemove}
+          onExport={onExport}
+          exporting={exporting}
           onRemoved={() => navigate(ROUTES.MAPES.LIST, { replace: true })}
         />
       </GlassSurface>

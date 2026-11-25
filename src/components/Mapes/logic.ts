@@ -1,7 +1,24 @@
 import { temaShortCode } from '~components/Planificacio/structure'
 import { Structure, Tema } from '~components/Planificacio/types'
 import { MAPA } from '~utils/constants'
-import { MAPA_COLORS, MapaColor, MapaMental, MapaNode, MapaResum, Viewport } from './types'
+import {
+  BRANCA_ESTILS,
+  BRANCA_TRACATS,
+  BrancaStyle,
+  FORMA_TIPUS,
+  MAPA_COLORS,
+  MapaColor,
+  MapaForma,
+  MapaImatge,
+  MapaMental,
+  MapaNode,
+  MapaResum,
+  MapaTrace,
+  NODE_EMPLENATS,
+  NODE_FORMES,
+  NODE_MIDES,
+  Viewport,
+} from './types'
 
 /**
  * Pure mind map logic: tree helpers, node placement and viewport math.
@@ -16,24 +33,82 @@ export const newId = () =>
 const now = () => new Date().toISOString()
 
 const isColor = (c: unknown): c is MapaColor => MAPA_COLORS.includes(c as MapaColor)
+const oneOf = <T extends string>(list: readonly T[], v: unknown): v is T => list.includes(v as T)
+const num = (v: unknown, fallback = 0) => (Number.isFinite(Number(v)) ? Number(v) : fallback)
+const list = (v: unknown): any[] => (Array.isArray(v) ? v.filter((x) => x && typeof x.id === 'string') : [])
+
+const migrateBranca = (b: any): BrancaStyle | undefined => {
+  if (!b || typeof b !== 'object') return undefined
+  const result: BrancaStyle = {
+    ...(Number(b.gruix) > 0 ? { gruix: Math.min(12, Number(b.gruix)) } : {}),
+    ...(oneOf(BRANCA_ESTILS, b.estil) ? { estil: b.estil } : {}),
+    ...(oneOf(BRANCA_TRACATS, b.tracat) ? { tracat: b.tracat } : {}),
+    ...(b.fletxa ? { fletxa: true } : {}),
+    ...(typeof b.text === 'string' && b.text.trim() ? { text: b.text } : {}),
+  }
+  return Object.keys(result).length ? result : undefined
+}
+
+const migrateNode = (n: any): MapaNode => {
+  const branca = migrateBranca(n.branca)
+  return {
+    id: n.id,
+    pare: typeof n.pare === 'string' ? n.pare : null,
+    text: typeof n.text === 'string' ? n.text : '',
+    x: num(n.x),
+    y: num(n.y),
+    ...(isColor(n.color) ? { color: n.color } : {}),
+    ...(n.plegat ? { plegat: true } : {}),
+    ...(oneOf(NODE_FORMES, n.forma) ? { forma: n.forma } : {}),
+    ...(oneOf(NODE_EMPLENATS, n.emplenat) ? { emplenat: n.emplenat } : {}),
+    ...(oneOf(NODE_MIDES, n.mida) ? { mida: n.mida } : {}),
+    ...(branca ? { branca } : {}),
+  }
+}
+
+const migrateTrace = (t: any): MapaTrace | null => {
+  const punts = Array.isArray(t.punts)
+    ? t.punts
+        .filter((p: any) => Array.isArray(p) && p.length >= 2)
+        .map((p: any): [number, number, number] => [num(p[0]), num(p[1]), num(p[2], 0.5)])
+    : []
+  if (!punts.length) return null
+  return {
+    id: t.id,
+    node: typeof t.node === 'string' ? t.node : null,
+    eina: t.eina === 'subratllador' ? 'subratllador' : 'ploma',
+    color: isColor(t.color) ? t.color : 'tinta',
+    gruix: Math.max(1, num(t.gruix, 4)),
+    ...(t.pressio ? { pressio: true } : {}),
+    punts,
+  }
+}
+
+const migrateForma = (f: any): MapaForma | null =>
+  oneOf(FORMA_TIPUS, f.tipus)
+    ? {
+        id: f.id,
+        tipus: f.tipus,
+        x1: num(f.x1),
+        y1: num(f.y1),
+        x2: num(f.x2),
+        y2: num(f.y2),
+        color: isColor(f.color) ? f.color : 'tinta',
+        gruix: Math.max(1, num(f.gruix, 3)),
+      }
+    : null
+
+const migrateImatge = (i: any): MapaImatge | null =>
+  typeof i.src === 'string' && i.src.startsWith('data:image/')
+    ? { id: i.id, x: num(i.x), y: num(i.y), w: Math.max(8, num(i.w, 200)), h: Math.max(8, num(i.h, 200)), src: i.src }
+    : null
+
+const notNull = <T>(v: T | null): v is T => v !== null
 
 /** Normalizes a stored or imported map */
 export const migrateMapa = (raw: any): MapaMental => {
   const created = typeof raw?.creat === 'string' ? raw.creat : now()
-  const nodes: MapaNode[] = Array.isArray(raw?.nodes)
-    ? raw.nodes
-        .filter((n: any) => n && typeof n.id === 'string')
-        .map((n: any) => ({
-          id: n.id,
-          pare: typeof n.pare === 'string' ? n.pare : null,
-          text: typeof n.text === 'string' ? n.text : '',
-          x: Number(n.x) || 0,
-          y: Number(n.y) || 0,
-          ...(isColor(n.color) ? { color: n.color } : {}),
-          ...(n.plegat ? { plegat: true } : {}),
-        }))
-    : []
-  // Orphans (their parent is gone) become roots
+  const nodes = list(raw?.nodes).map(migrateNode)
   const ids = new Set(nodes.map((n) => n.id))
   return {
     id: typeof raw?.id === 'string' ? raw.id : newId(),
@@ -42,8 +117,15 @@ export const migrateMapa = (raw: any): MapaMental => {
     row_id: typeof raw?.row_id === 'string' ? raw.row_id : null,
     creat: created,
     modificat: typeof raw?.modificat === 'string' ? raw.modificat : created,
+    // Orphans (their parent is gone) become roots
     nodes: nodes.map((n) => (n.pare && !ids.has(n.pare) ? { ...n, pare: null } : n)),
-    traces: Array.isArray(raw?.traces) ? raw.traces : [],
+    // Ink of a deleted node is dropped
+    traces: list(raw?.traces)
+      .map(migrateTrace)
+      .filter(notNull)
+      .filter((t) => !t.node || ids.has(t.node)),
+    formes: list(raw?.formes).map(migrateForma).filter(notNull),
+    imatges: list(raw?.imatges).map(migrateImatge).filter(notNull),
   }
 }
 
@@ -272,24 +354,12 @@ export const nodesFromTema = (tema: Tema, apartatRowId: string | null = null): M
   return [root, ...kids]
 }
 
-/** Bounding box of node centers, padded with the approximate node size */
-export const boundsOf = (nodes: MapaNode[]) => {
-  if (!nodes.length) return null
-  const xs = nodes.map((n) => n.x)
-  const ys = nodes.map((n) => n.y)
-  return {
-    minX: Math.min(...xs) - MAPA.NODE_W / 2,
-    maxX: Math.max(...xs) + MAPA.NODE_W / 2,
-    minY: Math.min(...ys) - MAPA.NODE_H / 2,
-    maxY: Math.max(...ys) + MAPA.NODE_H / 2,
-  }
-}
-
 const clampZoom = (k: number) => Math.min(MAPA.ZOOM_MAX, Math.max(MAPA.ZOOM_MIN, k))
 
-/** Viewport that shows every node in a box of w × h screen px (never zooms in past 100%) */
-export const fitViewport = (nodes: MapaNode[], w: number, h: number): Viewport => {
-  const b = boundsOf(nodes)
+type Bounds = { minX: number; maxX: number; minY: number; maxY: number }
+
+/** Viewport that shows a world box in w × h screen px (never zooms in past 100%) */
+export const fitViewport = (b: Bounds | null, w: number, h: number): Viewport => {
   if (!b || !w || !h) return { x: w / 2, y: h / 2, k: 1 }
   const pad = MAPA.FIT_PADDING
   const k = clampZoom(Math.min(1, (w - pad * 2) / (b.maxX - b.minX), (h - pad * 2) / (b.maxY - b.minY)))
@@ -321,12 +391,6 @@ export const isOffscreen = (vp: Viewport, x: number, y: number, w: number, h: nu
   const mx = (MAPA.NODE_W / 2) * vp.k
   const my = (MAPA.NODE_H / 2) * vp.k
   return sx - mx < 0 || sx + mx > w || sy - my < 0 || sy + my > h
-}
-
-/** Curve between a parent and a child center */
-export const edgePath = (a: MapaNode, b: MapaNode) => {
-  const mx = (a.x + b.x) / 2
-  return `M ${a.x} ${a.y} C ${mx} ${a.y}, ${mx} ${b.y}, ${b.x} ${b.y}`
 }
 
 /** Short label of the temari link of a map: "T3", "T3 · 3.2" or null for a free map */

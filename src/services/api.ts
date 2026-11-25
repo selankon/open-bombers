@@ -27,7 +27,7 @@ import { DayString, IsoDay, isoDayOf, today, weekIdOf, WeekId } from '~utils/dat
 import { getSlices, readSlice, registerSlice, removeSlice, writeSlice } from './storage'
 import { db } from './db'
 import { migrateMapa, newId, resumOf } from '~components/Mapes/logic'
-import { MapaInfoParams, MapaMental, NouMapaParams } from '~components/Mapes/types'
+import { MapaInfoParams, MapaMental, NouMapaParams, SaveContentParams } from '~components/Mapes/types'
 
 /**
  * Local "API". There is no backend: every method reads and writes localStorage through the
@@ -288,13 +288,15 @@ export const mapes = {
       modificat: t,
       nodes: nodes?.length ? nodes : [{ id: newId(), pare: null, text: titol, x: 0, y: 0 }],
       traces: [],
+      formes: [],
+      imatges: [],
     }
     return db.put(IDB_STORES.MAPES, mapa)
   },
-  // Saves the content edited in the editor (nodes and traces)
-  saveContent: async ({ id, nodes, traces }: Pick<MapaMental, 'id' | 'nodes' | 'traces'>) => {
+  // Saves the content edited in the editor (ideas, ink, shapes and pictures)
+  saveContent: async ({ id, nodes, traces, formes, imatges }: SaveContentParams) => {
     const mapa = await getMapa(id)
-    return db.put(IDB_STORES.MAPES, { ...mapa, nodes, traces, modificat: now() })
+    return db.put(IDB_STORES.MAPES, { ...mapa, nodes, traces, formes, imatges, modificat: now() })
   },
   // Title and link to the temari
   saveInfo: async ({ id, titol, tema_id, row_id }: MapaInfoParams) => {

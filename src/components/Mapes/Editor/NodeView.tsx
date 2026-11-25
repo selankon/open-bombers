@@ -1,9 +1,10 @@
 import { Box, chakra, Flex, Icon, Text } from '@chakra-ui/react'
 import { motion, useReducedMotion } from 'framer-motion'
-import { KeyboardEvent, memo, MouseEvent, PointerEvent, useEffect, useRef, useState } from 'react'
+import { KeyboardEvent, memo, MouseEvent, PointerEvent, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { icons } from '~theme/icons'
 import { duration, spring } from '~theme/motion'
+import { LINE_HEIGHT, nodeLook } from '../nodeLook'
 import { MapaColor, MapaNode } from '../types'
 
 const MotionBox = motion(Box)
@@ -20,9 +21,12 @@ type NodeViewProps = {
   isEditing: boolean
   isDropTarget: boolean
   isDragging: boolean
+  // False while a drawing tool is active: the pen draws over the ideas
+  interactive: boolean
   onPointerDown: (id: string, e: PointerEvent) => void
   onDoubleClick: (id: string) => void
   onToggleFold: (id: string) => void
+  onSize: (id: string, w: number, h: number) => void
   // Text when editing started from a typed key (replaces the current text)
   initialDraft: string | null
   onCommit: (id: string, text: string, next?: 'child' | 'sibling') => void
@@ -30,7 +34,7 @@ type NodeViewProps = {
 }
 
 /**
- * One idea of the map: a pill centered on (x, y), with inline text editing.
+ * One idea of the map, centered on (x, y), with inline text editing.
  * While editing, an invisible copy of the text sizes the box and the textarea sits on top.
  */
 export const NodeView = memo(
@@ -44,9 +48,11 @@ export const NodeView = memo(
     isEditing,
     isDropTarget,
     isDragging,
+    interactive,
     onPointerDown,
     onDoubleClick,
     onToggleFold,
+    onSize,
     initialDraft,
     onCommit,
     onCancel,
@@ -55,7 +61,9 @@ export const NodeView = memo(
     const reduce = useReducedMotion()
     const [draft, setDraft] = useState(node.text)
     const areaRef = useRef<HTMLTextAreaElement>(null)
+    const boxRef = useRef<HTMLDivElement>(null)
     const placeholder = t('mapes.node_placeholder', { defaultValue: 'Nova idea' })
+    const look = nodeLook(node, isRoot, color)
 
     // Start editing with the current text (or the typed key) and the caret at the end
     useEffect(() => {
@@ -69,6 +77,17 @@ export const NodeView = memo(
         el.setSelectionRange(text.length, text.length)
       })
     }, [isEditing])
+
+    // Report the real size of the box: lines attach to its border and the export draws it
+    useLayoutEffect(() => {
+      const el = boxRef.current
+      if (!el) return
+      const report = () => onSize(node.id, el.offsetWidth, el.offsetHeight)
+      report()
+      const observer = new ResizeObserver(report)
+      observer.observe(el)
+      return () => observer.disconnect()
+    }, [node.id, onSize])
 
     const onKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
       e.stopPropagation()
@@ -86,8 +105,25 @@ export const NodeView = memo(
 
     const text = isEditing ? draft : node.text
     const line = `var(--chakra-colors-mapa-${color})`
-    const tint = `mapa.${color}.bg`
     const folded = !!node.plegat && childCount > 0
+    const round = look.forma === 'cercle'
+    const radius =
+      look.forma === 'cercle'
+        ? '50%'
+        : look.forma === 'pindola'
+          ? '9999px'
+          : look.forma === 'text'
+            ? '8px'
+            : isRoot
+              ? '16px'
+              : '10px'
+    const textProps = {
+      fontSize: `${look.fontPx}px`,
+      fontWeight: look.fontWeight,
+      lineHeight: LINE_HEIGHT,
+      textAlign: 'center' as const,
+    }
+    const ring = `0 0 0 3px var(--chakra-colors-mapa-${color}-bg), 0 0 0 5px ${line}`
 
     return (
       <MotionBox
@@ -100,9 +136,10 @@ export const NodeView = memo(
         // @ts-ignore framer-motion transition prop through Chakra
         transition={reduce ? { duration: duration.fast } : spring.bouncy}
         zIndex={isEditing || isDragging ? 3 : isSelected ? 2 : 1}
-        pointerEvents={isDragging ? 'none' : 'auto'}
+        pointerEvents={isDragging || !interactive ? 'none' : 'auto'}
       >
-        <Box
+        <Flex
+          ref={boxRef}
           data-node-id={node.id}
           role='treeitem'
           aria-selected={isSelected}
@@ -113,35 +150,32 @@ export const NodeView = memo(
             onDoubleClick(node.id)
           }}
           position='relative'
+          align='center'
+          justify='center'
           w='max-content'
-          minW={isRoot ? 24 : 16}
-          maxW={isRoot ? '280px' : '240px'}
-          px={isRoot ? 5 : 4}
-          py={isRoot ? 3 : 2}
-          borderRadius={isRoot ? 'md' : 'sm'}
-          bg={isRoot || isDropTarget ? tint : 'surface'}
-          borderWidth={isRoot ? '2px' : '1.5px'}
-          borderColor={line}
+          minW={`${look.minW}px`}
+          maxW={`${look.maxW + look.padX * 2}px`}
+          // A circle is as tall as it is wide (it grows into an ellipse with long texts)
+          sx={{ aspectRatio: round ? '1' : undefined, touchAction: 'none' }}
+          px={`${look.padX}px`}
+          py={`${look.padY}px`}
+          borderRadius={radius}
+          bg={isDropTarget ? `mapa.${color}.bg` : (look.fill ?? 'transparent')}
+          borderWidth={`${look.borderPx}px`}
+          borderColor={look.stroke ? line : 'transparent'}
           boxShadow={
-            isSelected || isDropTarget
-              ? `0 0 0 3px var(--chakra-colors-mapa-${color}-bg), 0 0 0 5px ${line}`
-              : isDragging
-                ? 'raised'
-                : 'card'
+            isSelected || isDropTarget ? ring : isDragging ? 'raised' : look.forma === 'text' ? 'none' : 'card'
           }
           cursor={isEditing ? 'text' : 'pointer'}
           userSelect='none'
-          sx={{ touchAction: 'none' }}
         >
           <Text
+            {...textProps}
             visibility={isEditing ? 'hidden' : 'visible'}
-            fontSize={isRoot ? 'md' : 'sm'}
-            fontWeight={isRoot ? 700 : 500}
-            lineHeight={1.35}
-            textAlign='center'
             whiteSpace='pre-wrap'
             wordBreak='break-word'
-            color={text ? 'textPrimary' : 'textMuted'}
+            color={look.text}
+            opacity={text ? 1 : 0.6}
           >
             {/* The trailing space keeps the height of an empty last line while typing */}
             {text ? (isEditing ? `${text} ` : text) : placeholder}
@@ -157,23 +191,24 @@ export const NodeView = memo(
               aria-label={t('mapes.edit_text', { defaultValue: 'Text de la idea' })}
               placeholder={placeholder}
               position='absolute'
-              inset={0}
-              px={isRoot ? 5 : 4}
-              py={isRoot ? 3 : 2}
+              left={`${look.padX}px`}
+              right={`${look.padX}px`}
+              top='50%'
+              transform='translateY(-50%)'
+              h={`calc(100% - ${look.padY * 2}px)`}
+              maxH='100%'
+              p={0}
               bg='transparent'
               border='none'
               outline='none'
               resize='none'
               overflow='hidden'
-              fontSize={isRoot ? 'md' : 'sm'}
-              fontWeight={isRoot ? 700 : 500}
-              lineHeight={1.35}
-              textAlign='center'
-              color='textPrimary'
-              _placeholder={{ color: 'textMuted' }}
+              {...textProps}
+              color={look.text}
+              _placeholder={{ color: look.text, opacity: 0.6 }}
             />
           )}
-          {childCount > 0 && (folded || isSelected) && !isEditing && (
+          {childCount > 0 && (folded || isSelected) && !isEditing && interactive && (
             <Flex
               as='button'
               type='button'
@@ -208,7 +243,7 @@ export const NodeView = memo(
               {folded ? childCount : <Icon as={icons.collapse} boxSize={4} />}
             </Flex>
           )}
-        </Box>
+        </Flex>
       </MotionBox>
     )
   }

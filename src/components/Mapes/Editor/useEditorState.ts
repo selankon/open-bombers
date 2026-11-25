@@ -1,13 +1,13 @@
 import { useCallback, useMemo, useReducer } from 'react'
 import { MAPA } from '~utils/constants'
-import { MapaNode } from '../types'
+import { MapaContingut } from '../types'
 
-type Fn = (nodes: MapaNode[]) => MapaNode[]
+type Fn = (content: MapaContingut) => MapaContingut
 
 interface History {
-  past: MapaNode[][]
-  present: MapaNode[]
-  future: MapaNode[][]
+  past: MapaContingut[]
+  present: MapaContingut
+  future: MapaContingut[]
 }
 
 type Action =
@@ -18,7 +18,7 @@ type Action =
   | { type: 'redo' }
   | { type: 'drop' }
 
-const push = (past: MapaNode[][], nodes: MapaNode[]) => [...past.slice(-(MAPA.HISTORY_LIMIT - 1)), nodes]
+const push = (past: MapaContingut[], content: MapaContingut) => [...past.slice(-(MAPA.HISTORY_LIMIT - 1)), content]
 
 const reducer = (state: History, action: Action): History => {
   switch (action.type) {
@@ -54,11 +54,11 @@ const reducer = (state: History, action: Action): History => {
 }
 
 /**
- * Nodes being edited, with undo / redo.
+ * Content being edited (ideas, ink, shapes, pictures), with undo / redo.
  * - `apply`: a change that is one undo step
  * - `checkpoint` + `patch`: a continuous change (dragging) that becomes a single step
  */
-export const useEditorState = (initial: MapaNode[]) => {
+export const useEditorState = (initial: MapaContingut) => {
   const [state, dispatch] = useReducer(reducer, undefined, () => ({ past: [], present: initial, future: [] }))
 
   const apply = useCallback((fn: Fn) => dispatch({ type: 'apply', fn }), [])
@@ -70,7 +70,7 @@ export const useEditorState = (initial: MapaNode[]) => {
 
   return useMemo(
     () => ({
-      nodes: state.present,
+      content: state.present,
       canUndo: state.past.length > 0,
       canRedo: state.future.length > 0,
       apply,
