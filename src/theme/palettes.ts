@@ -89,6 +89,6 @@ export type PaletteId = keyof typeof PALETTES
 
 export const PALETTE_IDS = Object.keys(PALETTES) as PaletteId[]
 
-export const DEFAULT_PALETTE: PaletteId = 'brasa'
+export const DEFAULT_PALETTE: PaletteId = 'petroli'
 
 export const isPaletteId = (v: unknown): v is PaletteId => typeof v === 'string' && v in PALETTES

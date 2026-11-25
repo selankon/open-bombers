@@ -20,7 +20,7 @@ export const PalettePicker = () => {
     blau: t('palette.blau', { defaultValue: 'Blau marí' }),
     petroli: t('palette.petroli', { defaultValue: 'Petroli' }),
     indi: t('palette.indi', { defaultValue: 'Indi' }),
-    or: t('palette.or', { defaultValue: 'Or original' }),
+    or: t('palette.or', { defaultValue: 'Or' }),
   }
 
   return (

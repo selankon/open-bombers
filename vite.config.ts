@@ -54,7 +54,7 @@ const pwaManifest = (base: string): Partial<VitePWAOptions> => ({
     short_name: 'Open Bombers',
     description: "Planificació del temari i calendari de repassos per a les oposicions de Bombers. Funciona sense connexió.",
     lang: 'ca',
-    theme_color: '#E5531A',
+    theme_color: '#0E7C86',
     background_color: '#F7F6F4',
     display: 'standalone',
     start_url: base,
