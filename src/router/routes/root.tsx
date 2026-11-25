@@ -11,6 +11,8 @@ const RepassosLayout = lazy(() =>
 const RepassosTodayPage = lazy(() => import('~src/pages/repassos/today').then((m) => ({ default: m.Today })))
 const RepassosCalendarPage = lazy(() => import('~src/pages/repassos/calendar').then((m) => ({ default: m.Calendar })))
 const TemariPage = lazy(() => import('~src/pages/temari/view').then((m) => ({ default: m.View })))
+const MapesPage = lazy(() => import('~src/pages/mapes/list').then((m) => ({ default: m.List })))
+const MapaEditorPage = lazy(() => import('~src/pages/mapes/editor').then((m) => ({ default: m.Editor })))
 const SettingsPage = lazy(() => import('~src/pages/settings/view').then((m) => ({ default: m.View })))
 const HelpCalendarPage = lazy(() => import('~src/pages/help/calendar').then((m) => ({ default: m.CalendarHelp })))
 const NotFoundPage = lazy(() => import('~src/pages/NotFoundPage').then((m) => ({ default: m.NotFoundPage })))
@@ -58,6 +60,22 @@ const RootRoutesElements = [
     element: (
       <SuspenseLoader>
         <TemariPage />
+      </SuspenseLoader>
+    ),
+  },
+  {
+    path: ROUTES.MAPES.LIST,
+    element: (
+      <SuspenseLoader>
+        <MapesPage />
+      </SuspenseLoader>
+    ),
+  },
+  {
+    path: ROUTES.MAPES.EDITOR,
+    element: (
+      <SuspenseLoader>
+        <MapaEditorPage />
       </SuspenseLoader>
     ),
   },

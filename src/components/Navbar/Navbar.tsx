@@ -26,7 +26,7 @@ export const Navbar = () => {
       <Flex h={14} px={{ base: 4, md: 6 }} align='center' justify='space-between' maxW='container.2xl' mx='auto'>
         <HStack as={RouterLink} to={ROUTES.HOME} spacing={2.5}>
           <AppLogo boxSize={8} />
-          <Text fontWeight={700} letterSpacing='-0.01em'>
+          <Text fontWeight={700} letterSpacing='-0.01em' whiteSpace='nowrap' display={{ md: 'none', lg: 'block' }}>
             {t('app.name', { defaultValue: 'Open Bombers' })}
           </Text>
         </HStack>

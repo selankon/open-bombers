@@ -15,6 +15,7 @@ import {
 import { memo, ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card } from '~components/Layout/LayoutComponents'
+import { TemaMapaButton } from '~components/Mapes/TemaMapaButton'
 import { TemaPdfButton } from '~components/Temari/TemaPdfButton'
 import { icons } from '~theme/icons'
 import { formatShort } from '~utils/dates'
@@ -84,7 +85,8 @@ export const PlanMobileList = ({ columns, temes, cells, derived, estudis, onSave
               </AccordionButton>
               <AccordionPanel px={3} pb={3} pt={0}>
                 <LazyPanel>
-                  <TemaPdfButton tema={tema} variant='button' w='full' mb={3} />
+                  <TemaPdfButton tema={tema} variant='button' w='full' mb={2} />
+                  <TemaMapaButton tema={tema} variant='button' w='full' mb={3} />
                   <MobileFields
                     columns={temaColumns}
                     rowCells={cells[temaRow]}

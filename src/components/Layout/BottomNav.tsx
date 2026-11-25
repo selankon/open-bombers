@@ -3,6 +3,7 @@ import { motion } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
 import { Link as RouterLink, matchPath, useLocation } from 'react-router-dom'
 import { NAV_ITEMS } from '~components/Navbar/navItems'
+import { ROUTES } from '~src/router/routes'
 import { PRESS_SCALE, spring } from '~theme/motion'
 import { GlassSurface } from './Glass/GlassSurface'
 
@@ -10,12 +11,22 @@ export const BOTTOM_NAV_HEIGHT = 60
 
 const MotionLink = motion(RouterLink)
 
+// Screens that use the whole height (the mind map editor has its own bottom toolbar)
+const FULLSCREEN_ROUTES = [ROUTES.MAPES.EDITOR]
+
+export const useHidesBottomNav = () => {
+  const location = useLocation()
+  return FULLSCREEN_ROUTES.some((p) => matchPath(p, location.pathname))
+}
+
 /**
  * Fixed bottom navigation for mobile
  */
 export const BottomNav = () => {
   const { t } = useTranslation()
   const location = useLocation()
+  const hidden = useHidesBottomNav()
+  if (hidden) return null
 
   return (
     <GlassSurface

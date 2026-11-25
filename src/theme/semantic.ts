@@ -63,4 +63,20 @@ export const semanticColors = {
   'kind.mensual.bg': { default: '#FDE8EC', _dark: 'rgba(232,157,162,0.16)' },
   'kind.estudi': { default: 'primary.600', _dark: 'primary.300' },
   'kind.estudi.bg': { default: 'primary.50', _dark: 'rgba(229,83,26,0.18)' },
+
+  // Mind maps: canvas, dot grid and branch colors (line / node tint)
+  'mapa.canvas': { default: '#F7F6F4', _dark: '#0B1120' },
+  'mapa.grid': { default: 'rgba(15,23,42,0.10)', _dark: 'rgba(255,255,255,0.08)' },
+  'mapa.primari': { default: 'primary.500', _dark: 'primary.300' },
+  'mapa.primari.bg': { default: 'primary.50', _dark: 'rgba(255,255,255,0.06)' },
+  'mapa.blau': { default: '#3B82F6', _dark: '#60A5FA' },
+  'mapa.blau.bg': { default: '#EFF6FF', _dark: 'rgba(59,130,246,0.16)' },
+  'mapa.verd': { default: '#10B981', _dark: '#34D399' },
+  'mapa.verd.bg': { default: '#ECFDF5', _dark: 'rgba(16,185,129,0.16)' },
+  'mapa.groc': { default: '#D97706', _dark: '#FBBF24' },
+  'mapa.groc.bg': { default: '#FFFBEB', _dark: 'rgba(245,158,11,0.16)' },
+  'mapa.vermell': { default: '#E11D48', _dark: '#FB7185' },
+  'mapa.vermell.bg': { default: '#FFF1F2', _dark: 'rgba(225,29,72,0.16)' },
+  'mapa.lila': { default: '#7C3AED', _dark: '#A78BFA' },
+  'mapa.lila.bg': { default: '#F5F3FF', _dark: 'rgba(124,58,237,0.18)' },
 }

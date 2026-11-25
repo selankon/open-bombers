@@ -22,9 +22,12 @@ import { BackupFile } from '~components/Backup/types'
 import { pdfById, pdfUrl } from '~components/Temari/logic'
 import { ALL_TEMARI_PDFS } from '~src/data/temari-pdfs'
 import { TemariBatchResult, TemariPdf, TemariProgress } from '~components/Temari/types'
-import { BACKUP_VERSION, STORAGE_KEYS, TEMARI_CACHE_NAME } from '~utils/constants'
+import { BACKUP_VERSION, IDB_STORES, STORAGE_KEYS, TEMARI_CACHE_NAME } from '~utils/constants'
 import { DayString, IsoDay, isoDayOf, today, weekIdOf, WeekId } from '~utils/dates'
 import { getSlices, readSlice, registerSlice, removeSlice, writeSlice } from './storage'
+import { db } from './db'
+import { migrateMapa, newId, resumOf } from '~components/Mapes/logic'
+import { MapaInfoParams, MapaMental, NouMapaParams } from '~components/Mapes/types'
 
 /**
  * Local "API". There is no backend: every method reads and writes localStorage through the
@@ -256,11 +259,65 @@ export const ics = {
   },
 }
 
-// Backup endpoints: every registered slice goes into the file
+// Mind maps endpoints. They live in IndexedDB (ink strokes don't fit in localStorage).
+const readMapa = async (id: string) => {
+  const raw = await db.get<MapaMental>(IDB_STORES.MAPES, id)
+  return raw ? migrateMapa(raw) : null
+}
+
+const getMapa = async (id: string) => {
+  const mapa = await readMapa(id)
+  if (!mapa) throw new ApiError(`mapa ${id} not found`)
+  return mapa
+}
+
+const allMapes = async () => (await db.getAll<MapaMental>(IDB_STORES.MAPES)).map(migrateMapa)
+
+export const mapes = {
+  // Summaries of every map, the most recently edited first
+  list: async () => (await allMapes()).map(resumOf).sort((a, b) => (a.modificat < b.modificat ? 1 : -1)),
+  get: getMapa,
+  create: async ({ titol, tema_id, row_id, nodes }: NouMapaParams) => {
+    const t = now()
+    const mapa: MapaMental = {
+      id: newId(),
+      titol,
+      tema_id,
+      row_id,
+      creat: t,
+      modificat: t,
+      nodes: nodes?.length ? nodes : [{ id: newId(), pare: null, text: titol, x: 0, y: 0 }],
+      traces: [],
+    }
+    return db.put(IDB_STORES.MAPES, mapa)
+  },
+  // Saves the content edited in the editor (nodes and traces)
+  saveContent: async ({ id, nodes, traces }: Pick<MapaMental, 'id' | 'nodes' | 'traces'>) => {
+    const mapa = await getMapa(id)
+    return db.put(IDB_STORES.MAPES, { ...mapa, nodes, traces, modificat: now() })
+  },
+  // Title and link to the temari
+  saveInfo: async ({ id, titol, tema_id, row_id }: MapaInfoParams) => {
+    const mapa = await getMapa(id)
+    return db.put(IDB_STORES.MAPES, { ...mapa, titol, tema_id, row_id, modificat: now() })
+  },
+  duplicate: async ({ id, titol }: { id: string; titol: string }) => {
+    const mapa = await getMapa(id)
+    const t = now()
+    return db.put(IDB_STORES.MAPES, { ...mapa, id: newId(), titol, creat: t, modificat: t })
+  },
+  remove: async (id: string) => {
+    await db.delete(IDB_STORES.MAPES, id)
+    return id
+  },
+}
+
+// Backup endpoints: every registered slice goes into the file, plus the mind maps
 export const backup = {
   export: async (): Promise<BackupFile> => {
     const file: BackupFile = { version: BACKUP_VERSION, app: 'bombers', exported_at: now() }
     for (const slice of getSlices()) file[slice.name] = readSlice(slice)
+    file.mapes = await allMapes()
     return file
   },
   import: async (file: BackupFile) => {
@@ -268,15 +325,20 @@ export const backup = {
       throw new ApiError('invalid backup')
     }
     if (file.version > BACKUP_VERSION) throw new ApiError('backup from a newer version')
+    // Validate the maps before writing anything, so a broken file changes nothing
+    const importedMapes = Array.isArray(file.mapes) ? file.mapes.map(migrateMapa) : null
     for (const slice of getSlices()) {
       const raw = file[slice.name]
       // v1 backups have no repassos: start them empty
       const value = raw === undefined ? slice.defaults() : slice.migrate ? slice.migrate(raw) : raw
       writeSlice(slice, value)
     }
+    // Backups older than v3 have no maps: keep the ones on this device
+    if (importedMapes) await db.replaceAll(IDB_STORES.MAPES, importedMapes)
   },
   reset: async () => {
     for (const slice of getSlices()) removeSlice(slice)
+    await db.clear(IDB_STORES.MAPES)
   },
 }
 
@@ -349,4 +411,5 @@ export default {
   ics,
   backup,
   temari,
+  mapes,
 }

@@ -13,7 +13,7 @@ export const STORAGE_KEYS = {
 } as const
 
 // Current version of the backup file format
-export const BACKUP_VERSION = 2
+export const BACKUP_VERSION = 3
 
 // Prefix of the compressed text code used to move data between devices
 export const BACKUP_CODE_PREFIX = 'BMB2:'
@@ -53,3 +53,39 @@ export const TEMARI_CACHE_NAME = `${APP_SLUG}_temari_v1`
 
 // Pause between files on "download all", so browsers don't drop downloads
 export const TEMARI_DOWNLOAD_DELAY = 400
+
+// IndexedDB database for the data too big for localStorage (mind maps)
+export const IDB_NAME = `${APP_SLUG}_db`
+export const IDB_VERSION = 1
+export const IDB_STORES = { MAPES: 'mapes' } as const
+
+// BroadcastChannel used to tell other tabs that IndexedDB data changed
+export const IDB_CHANNEL = `${APP_SLUG}:idb`
+
+// Mind map editor
+export const MAPA = {
+  // Debounce of the autosave while editing (ms)
+  SAVE_DELAY: 600,
+  // Max undo steps kept in memory
+  HISTORY_LIMIT: 100,
+  // Zoom limits
+  ZOOM_MIN: 0.2,
+  ZOOM_MAX: 2.5,
+  // Zoom step of the +/- buttons and keyboard
+  ZOOM_STEP: 1.2,
+  // Opening a map never starts below this zoom (small screens center the main idea instead)
+  READABLE_ZOOM: 0.6,
+  // Spacing of the background dots (world px) and their minimum on screen
+  GRID: 24,
+  GRID_MIN: 12,
+  // Distance between a node and a new child / sibling (world px)
+  CHILD_GAP_X: 240,
+  SIBLING_GAP_Y: 64,
+  // Approximate node box used to avoid overlaps and to fit the view
+  NODE_W: 180,
+  NODE_H: 48,
+  // Padding around the content when fitting the view (screen px)
+  FIT_PADDING: 48,
+  // Pointer movement (px) before a press becomes a drag
+  DRAG_THRESHOLD: 4,
+}

@@ -1,6 +1,7 @@
 import { Box, chakra, Flex, IconButton, Text, Tooltip } from '@chakra-ui/react'
 import { Fragment, memo, useLayoutEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { TemaMapaButton } from '~components/Mapes/TemaMapaButton'
 import { TemaPdfButton } from '~components/Temari/TemaPdfButton'
 import { icons } from '~theme/icons'
 import { formatShort } from '~utils/dates'
@@ -369,6 +370,19 @@ const PlanRow = memo(
                   {tema.codi}
                 </Box>
                 <TemaPdfButton
+                  tema={tema}
+                  variant='icon'
+                  size='xs'
+                  minW={6}
+                  h={6}
+                  fontSize='sm'
+                  borderRadius='full'
+                  bg='transparent'
+                  color='white'
+                  _hover={{ bg: 'whiteAlpha.300' }}
+                  _active={{ bg: 'whiteAlpha.400' }}
+                />
+                <TemaMapaButton
                   tema={tema}
                   variant='icon'
                   size='xs'

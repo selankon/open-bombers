@@ -34,6 +34,13 @@ export const NAV_ITEMS: NavItem[] = [
     defaultLabel: 'Temari',
   },
   {
+    path: ROUTES.MAPES.LIST,
+    match: [ROUTES.MAPES.LIST, ROUTES.MAPES.EDITOR],
+    icon: icons.mapes,
+    labelKey: 'nav.mapes',
+    defaultLabel: 'Mapes',
+  },
+  {
     path: ROUTES.SETTINGS,
     match: [ROUTES.SETTINGS, ROUTES.HELP.CALENDAR],
     icon: icons.settings,
