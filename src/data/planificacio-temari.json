@@ -1,0 +1,1320 @@
+[
+  {
+    "id": "tema_1789054145",
+    "codi": "TEMA 1.",
+    "nom": "CE i EAC",
+    "apartats": [
+      {
+        "row_id": "tema_1789054145_1",
+        "num": "1.",
+        "titol": "Constitució Espanyola 1978"
+      },
+      {
+        "row_id": "tema_1789054145_2_1789054383",
+        "num": "2.",
+        "titol": "Estatut d'Autonomia de Catalunya 2026"
+      },
+      {
+        "row_id": "tema_1789054145_3_1789054402",
+        "num": "3.",
+        "titol": "Organització de l'Administració Catalana"
+      },
+      {
+        "row_id": "tema_1789054145_4_1789055557",
+        "num": "4.",
+        "titol": "Annex Taules comparatives"
+      }
+    ]
+  },
+  {
+    "id": "tema_1789055611",
+    "codi": "TEMA 2.",
+    "nom": "Funció Pública",
+    "apartats": [
+      {
+        "row_id": "tema_1789055611_1",
+        "num": "1.",
+        "titol": "Regulació de la Funció Pública"
+      },
+      {
+        "row_id": "tema_1789055611_2_1789055666",
+        "num": "2.",
+        "titol": "El personal al servei de les administracions"
+      },
+      {
+        "row_id": "tema_1789055611_3_1789055679",
+        "num": "3.",
+        "titol": "Drets i deures del personal funcionari"
+      },
+      {
+        "row_id": "tema_1789055611_4_1789055698",
+        "num": "4.",
+        "titol": "Adquisició i pèrdua de la relació de servei"
+      },
+      {
+        "row_id": "tema_1789055611_5_1789055706",
+        "num": "5.",
+        "titol": "Situacions administratives"
+      },
+      {
+        "row_id": "tema_1789055611_6_1789055723",
+        "num": "6.",
+        "titol": "Mobilitat i sistemes de provisió de llocs de treball"
+      },
+      {
+        "row_id": "tema_1789055611_7_1789055737",
+        "num": "7.",
+        "titol": "Incompatibilitats"
+      },
+      {
+        "row_id": "tema_1789055611_8_1789055750",
+        "num": "8.",
+        "titol": "Règim disciplinari"
+      },
+      {
+        "row_id": "tema_1789055611_9_1789055761",
+        "num": "9.",
+        "titol": "Annex Taules Resum"
+      }
+    ]
+  },
+  {
+    "id": "tema_1789549993",
+    "codi": "TEMA 3.",
+    "nom": "Prevenció de riscos laborals",
+    "apartats": [
+      {
+        "row_id": "tema_1789549993_1",
+        "num": "1.1",
+        "titol": "Objecte, àmbit d’aplicació i definicions"
+      },
+      {
+        "row_id": "tema_1789549993_2_1789550089",
+        "num": "1.2",
+        "titol": "Principis de l’acció preventiva"
+      },
+      {
+        "row_id": "tema_1789549993_3_1789550094",
+        "num": "1.3",
+        "titol": "Equips de treball i mitjans de protecció"
+      },
+      {
+        "row_id": "tema_1789549993_4_1789550098",
+        "num": "1.4",
+        "titol": "Drets i obligacions"
+      },
+      {
+        "row_id": "tema_1789549993_5_1789550103",
+        "num": "1.5",
+        "titol": "Serveis de prevenció"
+      },
+      {
+        "row_id": "tema_1789549993_6_1789550111",
+        "num": "1.6",
+        "titol": "Informació, consulta i participació dels treballadors"
+      },
+      {
+        "row_id": "tema_1789549993_7_1789550117",
+        "num": "2.1",
+        "titol": "Normativa de desplegament. Normes i fitxes tècniques"
+      },
+      {
+        "row_id": "tema_1789549993_8_1789550123",
+        "num": "2.2",
+        "titol": "Equips de protecció individual"
+      },
+      {
+        "row_id": "tema_1789549993_9_1789550130",
+        "num": "2.3",
+        "titol": "Categories, nivells i tipus d’EPI"
+      },
+      {
+        "row_id": "tema_1789549993_10_1789550136",
+        "num": "2.4",
+        "titol": "Marcatge reglamentari CE i marcatge específic"
+      },
+      {
+        "row_id": "tema_1789549993_11_1789550140",
+        "num": "2.5",
+        "titol": "Informació rellevant"
+      }
+    ]
+  },
+  {
+    "id": "tema_1789550003",
+    "codi": "TEMA 4.",
+    "nom": "Igualtat de tracte i no-discriminació. Igualtat efectiva de dones i homes.",
+    "apartats": [
+      {
+        "row_id": "tema_1789550003_1",
+        "num": "1.1",
+        "titol": "Títol I. Disposicions generals"
+      },
+      {
+        "row_id": "tema_1789550003_2_1789550215",
+        "num": "1.2",
+        "titol": "Títol II. Àmbits d’aplicació material del dret a la igualtat de tracte i a la no-discriminació"
+      },
+      {
+        "row_id": "tema_1789550003_3_1789550220",
+        "num": "1.3",
+        "titol": "Títol III. Defensa i promoció del dret a la igualtat de tracte i a la no-discriminació"
+      },
+      {
+        "row_id": "tema_1789550003_4_1789550227",
+        "num": "2.1",
+        "titol": "Introducció"
+      },
+      {
+        "row_id": "tema_1789550003_5_1789550232",
+        "num": "2.2",
+        "titol": "Objectiu"
+      },
+      {
+        "row_id": "tema_1789550003_6_1789550238",
+        "num": "2.3",
+        "titol": "Àmbit d’aplicació"
+      },
+      {
+        "row_id": "tema_1789550003_7_1789550243",
+        "num": "2.4",
+        "titol": "Definició de conceptes"
+      },
+      {
+        "row_id": "tema_1789550003_8_1789550248",
+        "num": "2.5",
+        "titol": "Tipus d’assetjament"
+      },
+      {
+        "row_id": "tema_1789550003_9_1789550253",
+        "num": "2.6",
+        "titol": "Principis generals"
+      },
+      {
+        "row_id": "tema_1789550003_10_1789550259",
+        "num": "2.7",
+        "titol": "Competències i responsabilitats"
+      },
+      {
+        "row_id": "tema_1789550003_11_1789550265",
+        "num": "2.8",
+        "titol": "Actuacions"
+      },
+      {
+        "row_id": "tema_1789550003_12_1789550271",
+        "num": "2.9",
+        "titol": "Seguiment i avaluació de l’aplicació del protocol"
+      },
+      {
+        "row_id": "tema_1789550003_13_1789550284",
+        "num": "Annex 1",
+        "titol": "Definicions de l’article 4 de la Llei 19/2020"
+      },
+      {
+        "row_id": "tema_1789550003_14_1789550290",
+        "num": "3.1",
+        "titol": "Capítol I. Disposicions generals"
+      },
+      {
+        "row_id": "tema_1789550003_15_1789550297",
+        "num": "3.2",
+        "titol": "Capítol III. Mecanismes per garantir el dret a la igualtat efectiva de dones i homes en el sector públic"
+      },
+      {
+        "row_id": "tema_1789550003_16_1789550302",
+        "num": "3.3",
+        "titol": "Capítol IV. Polítiques públiques per promoure la igualtat efectiva de dones i homes"
+      },
+      {
+        "row_id": "tema_1789550003_17_1789550314",
+        "num": "Annex 2",
+        "titol": "Definicions de l’article 2 de la Llei 17/2015"
+      }
+    ]
+  },
+  {
+    "id": "tema_1789550012",
+    "codi": "TEMA 5.",
+    "nom": "Política lingüística",
+    "apartats": [
+      {
+        "row_id": "tema_1789550012_1",
+        "num": "1.",
+        "titol": "Titol Preliminar"
+      },
+      {
+        "row_id": "tema_1789550012_2_1789550351",
+        "num": "2.",
+        "titol": "Primer Capitol"
+      }
+    ]
+  },
+  {
+    "id": "tema_1789549545",
+    "codi": "TEMA 6.",
+    "nom": "Llei bombers i protecció civil",
+    "apartats": [
+      {
+        "row_id": "tema_1789549545_1",
+        "num": "1.",
+        "titol": "Introducció"
+      },
+      {
+        "row_id": "tema_1789549545_2_1789549570",
+        "num": "1.2",
+        "titol": "Títol I. Disposicions generals"
+      },
+      {
+        "row_id": "tema_1789549545_3_1789549590",
+        "num": "1.3",
+        "titol": "Títol II. El cos de Bombers de la Generalitat"
+      },
+      {
+        "row_id": "tema_1789549545_4_1789549596",
+        "num": "1.4",
+        "titol": "Títol III. Serveis municipals de prevenció i extinció d’incendis"
+      },
+      {
+        "row_id": "tema_1789549545_5_1789549604",
+        "num": "1.5",
+        "titol": "Títol IV. Bombers voluntaris"
+      },
+      {
+        "row_id": "tema_1789549545_6_1789549612",
+        "num": "1.6",
+        "titol": "Títol V. Bombers d’empresa"
+      },
+      {
+        "row_id": "tema_1789549545_7_1789549620",
+        "num": "1.7",
+        "titol": "Títol VI. De l’Escola de Bombers de Catalunya"
+      },
+      {
+        "row_id": "tema_1789549545_8_1789549628",
+        "num": "1.8",
+        "titol": "Títol VII. Finançament"
+      },
+      {
+        "row_id": "tema_1789549545_9_1789549634",
+        "num": "1.9",
+        "titol": "Disposicions addicionals"
+      },
+      {
+        "row_id": "tema_1789549545_10_1789549642",
+        "num": "2.1",
+        "titol": "Introducció"
+      },
+      {
+        "row_id": "tema_1789549545_11_1789549651",
+        "num": "2.2",
+        "titol": "Drets i deures"
+      },
+      {
+        "row_id": "tema_1789549545_12_1789549658",
+        "num": "2.3",
+        "titol": "Actuacions bàsiques de protecció civil"
+      },
+      {
+        "row_id": "tema_1789549545_13_1789549662",
+        "num": "2.4",
+        "titol": "Estructura organitzativa de la protecció civil"
+      },
+      {
+        "row_id": "tema_1789549545_14_1789549667",
+        "num": "2.5",
+        "titol": "Òrgans"
+      },
+      {
+        "row_id": "tema_1789549545_15_1789549673",
+        "num": "2.6",
+        "titol": "Capítol V. Relacions interadministratives"
+      },
+      {
+        "row_id": "tema_1789549545_16_1789549679",
+        "num": "2.7",
+        "titol": "Capítol VI. Infraccions i sancions"
+      }
+    ]
+  },
+  {
+    "id": "tema_1789550023",
+    "codi": "TEMA 7.",
+    "nom": "Organització del cos de Bombers",
+    "apartats": [
+      {
+        "row_id": "tema_1789550023_1",
+        "num": "1.1",
+        "titol": "La guàrdia"
+      },
+      {
+        "row_id": "tema_1789550023_2_1789550523",
+        "num": "1.2",
+        "titol": "Sistema de comandament (SISCOM)"
+      },
+      {
+        "row_id": "tema_1789550023_3_1789550528",
+        "num": "2.1",
+        "titol": "Esquema del Departament d’Interior"
+      },
+      {
+        "row_id": "tema_1789550023_4_1789550532",
+        "num": "2.2",
+        "titol": "Estructura organitzativa del cos de Bombers de la Generalitat"
+      }
+    ]
+  },
+  {
+    "id": "tema_1789550631",
+    "codi": "TEMA 8.",
+    "nom": "Teoria del foc i agents extintors",
+    "apartats": [
+      {
+        "row_id": "tema_1789550631_1",
+        "num": "1.",
+        "titol": "Introducció"
+      },
+      {
+        "row_id": "tema_1789550631_2_1789550680",
+        "num": "2.",
+        "titol": "Reaccions d’oxidació"
+      },
+      {
+        "row_id": "tema_1789550631_3_1789550683",
+        "num": "3.",
+        "titol": "La combustió"
+      },
+      {
+        "row_id": "tema_1789550631_4_1789550685",
+        "num": "4.",
+        "titol": "Triangle i tetraedre del foc"
+      },
+      {
+        "row_id": "tema_1789550631_5_1789550687",
+        "num": "5.",
+        "titol": "Combustibles: classificació i propietats"
+      },
+      {
+        "row_id": "tema_1789550631_6_1789550689",
+        "num": "6.",
+        "titol": "Comburents"
+      },
+      {
+        "row_id": "tema_1789550631_7_1789550691",
+        "num": "7.",
+        "titol": "Fonts d’ignició"
+      },
+      {
+        "row_id": "tema_1789550631_8_1789550693",
+        "num": "8.",
+        "titol": "Condicionants que afecten la combustió"
+      },
+      {
+        "row_id": "tema_1789550631_9_1789550695",
+        "num": "9.",
+        "titol": "Transmissió de la calor i mecanismes de propagació"
+      },
+      {
+        "row_id": "tema_1789550631_10_1789550697",
+        "num": "10.",
+        "titol": "Efectes de la calor en els materials"
+      },
+      {
+        "row_id": "tema_1789550631_11_1789550699",
+        "num": "11.",
+        "titol": "Fenòmens extrems. Backdraft i Flashover"
+      },
+      {
+        "row_id": "tema_1789550631_12_1789550701",
+        "num": "12.",
+        "titol": "Productes de la combustió"
+      },
+      {
+        "row_id": "tema_1789550631_13_1789550706",
+        "num": "13.",
+        "titol": "Teoria de l’extinció"
+      }
+    ]
+  },
+  {
+    "id": "tema_1789550642",
+    "codi": "TEMA 9.",
+    "nom": "Física",
+    "apartats": [
+      {
+        "row_id": "tema_1789550642_1",
+        "num": "1.",
+        "titol": "Introducció"
+      },
+      {
+        "row_id": "tema_1789550642_2_1789550859",
+        "num": "2.",
+        "titol": "Magnituds i Unitats"
+      },
+      {
+        "row_id": "tema_1789550642_3_1789550861",
+        "num": "3.",
+        "titol": "Geometria i trigonometria"
+      },
+      {
+        "row_id": "tema_1789550642_4_1789550863",
+        "num": "4.",
+        "titol": "Mecànica clàssica"
+      },
+      {
+        "row_id": "tema_1789550642_5_1789550866",
+        "num": "5.",
+        "titol": "Màquines simples"
+      }
+    ]
+  },
+  {
+    "id": "tema_1789549762",
+    "codi": "TEMA 10.",
+    "nom": "Química",
+    "apartats": [
+      {
+        "row_id": "tema_1789549762_1",
+        "num": "1.",
+        "titol": "Introducció"
+      },
+      {
+        "row_id": "tema_1789549762_2_1789549778",
+        "num": "2.",
+        "titol": "Estructura de la matèria"
+      },
+      {
+        "row_id": "tema_1789549762_3_1789549780",
+        "num": "3.",
+        "titol": "Enllaços químics"
+      },
+      {
+        "row_id": "tema_1789549762_4_1789549782",
+        "num": "4.",
+        "titol": "Reaccions químiques"
+      },
+      {
+        "row_id": "tema_1789549762_5_1789549783",
+        "num": "5.",
+        "titol": "Estequiometria"
+      },
+      {
+        "row_id": "tema_1789549762_6_1789549785",
+        "num": "6.",
+        "titol": "Estats de la matèria"
+      },
+      {
+        "row_id": "tema_1789549762_7_1789549787",
+        "num": "7.",
+        "titol": "Termoquímica"
+      },
+      {
+        "row_id": "tema_1789549762_8_1789549790",
+        "num": "8.",
+        "titol": "Hidrocarburs (alcans, alquens, alquins)"
+      },
+      {
+        "row_id": "tema_1789549762_9_1789549792",
+        "num": "9.",
+        "titol": "Propietats físiques i químiques"
+      }
+    ]
+  },
+  {
+    "id": "tema_1789550883",
+    "codi": "TEMA 11.",
+    "nom": "Electricitat",
+    "apartats": [
+      {
+        "row_id": "tema_1789550883_1",
+        "num": "1.",
+        "titol": "Introducció"
+      },
+      {
+        "row_id": "tema_1789550883_2_1789550962",
+        "num": "2.",
+        "titol": "Fonaments d’electricitat"
+      },
+      {
+        "row_id": "tema_1789550883_3_1789550964",
+        "num": "3.",
+        "titol": "Magnituds elèctriques bàsiques"
+      },
+      {
+        "row_id": "tema_1789550883_4_1789550965",
+        "num": "4.",
+        "titol": "Lleis i fórmules bàsiques de l’electricitat"
+      },
+      {
+        "row_id": "tema_1789550883_5_1789550967",
+        "num": "5.",
+        "titol": "Circuits elèctrics simples"
+      },
+      {
+        "row_id": "tema_1789550883_6_1789550969",
+        "num": "6.",
+        "titol": "Símil hidràulic"
+      },
+      {
+        "row_id": "tema_1789550883_7_1789550971",
+        "num": "7.",
+        "titol": "Tipus de corrent elèctric"
+      },
+      {
+        "row_id": "tema_1789550883_8_1789550973",
+        "num": "8.",
+        "titol": "Electromagnetisme"
+      },
+      {
+        "row_id": "tema_1789550883_9_1789550974",
+        "num": "9.",
+        "titol": "Riscos associats a l’electricitat"
+      }
+    ]
+  },
+  {
+    "id": "tema_1789550892",
+    "codi": "TEMA 12.",
+    "nom": "Instal·lacions",
+    "apartats": [
+      {
+        "row_id": "tema_1789550892_1",
+        "num": "1.",
+        "titol": "Introducció"
+      },
+      {
+        "row_id": "tema_1789550892_2_1789550978",
+        "num": "2.",
+        "titol": "Instal·lacions elèctriques"
+      },
+      {
+        "row_id": "tema_1789550892_3_1789550980",
+        "num": "3.",
+        "titol": "Instal·lacions d’aigua"
+      },
+      {
+        "row_id": "tema_1789550892_4_1789550983",
+        "num": "4.",
+        "titol": "Instal·lacions de gas"
+      }
+    ]
+  },
+  {
+    "id": "tema_1789550899",
+    "codi": "TEMA 13.",
+    "nom": "Hidràulica i bombes",
+    "apartats": [
+      {
+        "row_id": "tema_1789550899_1",
+        "num": "1.",
+        "titol": "Introducció"
+      }
+    ]
+  },
+  {
+    "id": "tema_1789549703",
+    "codi": "TEMA 14.",
+    "nom": "Cartografia i orientació",
+    "apartats": [
+      {
+        "row_id": "tema_1789549703_1",
+        "num": "1.",
+        "titol": "Introducció"
+      },
+      {
+        "row_id": "tema_1789549703_2_1789549731",
+        "num": "2.",
+        "titol": "La cartografia"
+      },
+      {
+        "row_id": "tema_1789549703_3_1789549733",
+        "num": "3.",
+        "titol": "L’orientació"
+      },
+      {
+        "row_id": "tema_1789549703_4_1789549736",
+        "num": "4.",
+        "titol": "El GNSS i els mapes digitals: la navegació moderna"
+      },
+      {
+        "row_id": "tema_1789549703_5_1789549739",
+        "num": "5.",
+        "titol": "Cartografia Operativa d’Emergències (COE)"
+      },
+      {
+        "row_id": "tema_1789549703_6_1789549741",
+        "num": "6.",
+        "titol": "SIG – Sistemes d’informació Geogràfica"
+      }
+    ]
+  },
+  {
+    "id": "tema_1789551000",
+    "codi": "TEMA 15.",
+    "nom": "Construcció",
+    "apartats": [
+      {
+        "row_id": "tema_1789551000_1",
+        "num": "1.",
+        "titol": "Introducció"
+      },
+      {
+        "row_id": "tema_1789551000_2_1789551021",
+        "num": "2.",
+        "titol": "Accions, Reaccions i esforços"
+      },
+      {
+        "row_id": "tema_1789551000_3_1789551024",
+        "num": "3.",
+        "titol": "Materials"
+      },
+      {
+        "row_id": "tema_1789551000_4_1789551026",
+        "num": "4.",
+        "titol": "Elements Estructurals"
+      },
+      {
+        "row_id": "tema_1789551000_5_1789551028",
+        "num": "5.",
+        "titol": "Sistemes constructius"
+      }
+    ]
+  },
+  {
+    "id": "tema_16",
+    "codi": "Tema 16.",
+    "nom": "Intervenció en assistències tècniques",
+    "apartats": [
+      {
+        "row_id": "16_1",
+        "num": "1.",
+        "titol": "Introducció"
+      },
+      {
+        "row_id": "16_2",
+        "num": "2.",
+        "titol": "Intervenció amb animals"
+      },
+      {
+        "row_id": "16_3",
+        "num": "3.",
+        "titol": "Intervencions amb motoserra"
+      },
+      {
+        "row_id": "16_4",
+        "num": "4.",
+        "titol": "Intervencions amb accés a habitatges en entorn urbà"
+      },
+      {
+        "row_id": "16_5",
+        "num": "5.",
+        "titol": "Intervencions amb motoserra i eina de tall"
+      }
+    ]
+  },
+  {
+    "id": "tema_17",
+    "codi": "Tema 17.",
+    "nom": "Intervenció en assistències tècniques (Comunicacions)",
+    "apartats": [
+      {
+        "row_id": "17_1",
+        "num": "1.",
+        "titol": "Introducció"
+      },
+      {
+        "row_id": "17_2",
+        "num": "2.",
+        "titol": "Fonaments i principis de la comunicació en emergències"
+      },
+      {
+        "row_id": "17_3",
+        "num": "3.",
+        "titol": "Estructurar les comunicacions habituals"
+      },
+      {
+        "row_id": "17_4",
+        "num": "4.",
+        "titol": "Org. de les comunicacions per ràdio en les intervencions"
+      },
+      {
+        "row_id": "17_5",
+        "num": "5.",
+        "titol": "La xarxa Rescat i les emissores"
+      }
+    ]
+  },
+  {
+    "id": "tema_18",
+    "codi": "Tema 18.",
+    "nom": "Vehicles d’intervenció en emergències",
+    "apartats": [
+      {
+        "row_id": "18_1",
+        "num": "1.",
+        "titol": "Introducció general als vehicles d’emergència"
+      },
+      {
+        "row_id": "18_2",
+        "num": "2.",
+        "titol": "Tipologia general de vehicles"
+      },
+      {
+        "row_id": "18_3",
+        "num": "3.",
+        "titol": "Autobombes i vehicles d’extinció"
+      },
+      {
+        "row_id": "18_4",
+        "num": "4.",
+        "titol": "Vehicles especials"
+      },
+      {
+        "row_id": "18_5",
+        "num": "5.",
+        "titol": "Altres tipus de vehicles d’emergència"
+      },
+      {
+        "row_id": "18_6",
+        "num": "6.",
+        "titol": "Mitjans aeris"
+      },
+      {
+        "row_id": "18_7",
+        "num": "7.",
+        "titol": "Consideracions operatives i manteniment"
+      }
+    ]
+  },
+  {
+    "id": "tema_1789551046",
+    "codi": "TEMA 19.",
+    "nom": "Conducció i mecànica de vehicles d’emergència",
+    "apartats": [
+      {
+        "row_id": "tema_1789551046_1",
+        "num": "1.",
+        "titol": "Introducció"
+      },
+      {
+        "row_id": "tema_1789551046_2_1789551056",
+        "num": "2.",
+        "titol": "La conducció d’emergència"
+      },
+      {
+        "row_id": "tema_1789551046_3_1789551058",
+        "num": "3.",
+        "titol": "Utilització de senyalització i dispositius"
+      },
+      {
+        "row_id": "tema_1789551046_4_1789551059",
+        "num": "4.",
+        "titol": "Situacions diverses"
+      },
+      {
+        "row_id": "tema_1789551046_5_1789551061",
+        "num": "5.",
+        "titol": "Mecànica bàsica per a conductors"
+      },
+      {
+        "row_id": "tema_1789551046_6_1789551063",
+        "num": "6.",
+        "titol": "Criteris de seguretat en la conducció de vehicles"
+      }
+    ]
+  },
+  {
+    "id": "tema_20",
+    "codi": "Tema 20.",
+    "nom": "Equips de protecció individual d’intervenció en emergències",
+    "apartats": [
+      {
+        "row_id": "20_1",
+        "num": "1.",
+        "titol": "Introducció"
+      },
+      {
+        "row_id": "20_2",
+        "num": "2.",
+        "titol": "Tipus d’EPI i complements segons el risc"
+      },
+      {
+        "row_id": "20_3",
+        "num": "3.",
+        "titol": "Equips de protecció respiratòria"
+      },
+      {
+        "row_id": "20_4",
+        "num": "4.",
+        "titol": "Manteniment de l’EPI i altres equips de treball"
+      }
+    ]
+  },
+  {
+    "id": "tema_1789549817",
+    "codi": "TEMA 21.",
+    "nom": "Introducció a la gestió d’emergències i el sistema de protecció civil",
+    "apartats": [
+      {
+        "row_id": "tema_1789549817_1",
+        "num": "1.",
+        "titol": "Introducció a la gestió d’emergències"
+      },
+      {
+        "row_id": "tema_1789549817_2_1789549828",
+        "num": "2.",
+        "titol": "Els riscos: concepte i gestió integral"
+      },
+      {
+        "row_id": "tema_1789549817_3_1789549830",
+        "num": "3.",
+        "titol": "El sistema de protecció civil"
+      },
+      {
+        "row_id": "tema_1789549817_4_1789549955",
+        "num": "4.",
+        "titol": "Els plans de protecció civil"
+      },
+      {
+        "row_id": "tema_1789549817_5_1789549958",
+        "num": "5.",
+        "titol": "Estructura operativa i sistemes de resposta"
+      },
+      {
+        "row_id": "tema_1789549817_6_1789549961",
+        "num": "6.",
+        "titol": "Divulgació i sensibilització"
+      }
+    ]
+  },
+  {
+    "id": "tema_1789551072",
+    "codi": "TEMA 22.",
+    "nom": "Principis i característiques del Sistema de Comandament del Cos de Bombers",
+    "apartats": [
+      {
+        "row_id": "tema_1789551072_1",
+        "num": "1.",
+        "titol": "Introducció a l’ICS"
+      },
+      {
+        "row_id": "tema_1789551072_2_1789551318",
+        "num": "2.",
+        "titol": "El SISCOM del cos de Bombers de la Generalitat de Catalunya"
+      },
+      {
+        "row_id": "tema_1789551072_3_1789551321",
+        "num": "3.",
+        "titol": "Estandarització"
+      },
+      {
+        "row_id": "tema_1789551072_4_1789551323",
+        "num": "4.",
+        "titol": "Principis de comandament"
+      },
+      {
+        "row_id": "tema_1789551072_5_1789551325",
+        "num": "5.",
+        "titol": "Funcions i posicions"
+      },
+      {
+        "row_id": "tema_1789551072_6_1789551327",
+        "num": "6.",
+        "titol": "Organització dels recursos de la intervenció"
+      },
+      {
+        "row_id": "tema_1789551072_7_1789551331",
+        "num": "7.",
+        "titol": "Instal·lacions"
+      }
+    ]
+  },
+  {
+    "id": "tema_1789551079",
+    "codi": "TEMA 23.",
+    "nom": "Prevenció bàsica d’incendis",
+    "apartats": [
+      {
+        "row_id": "tema_1789551079_1",
+        "num": "1.",
+        "titol": "Introducció"
+      },
+      {
+        "row_id": "tema_1789551079_2_1789551334",
+        "num": "2.",
+        "titol": "La intervenció dels bombers: Accessibilitat i aproximació per l’interior de l’edifici"
+      },
+      {
+        "row_id": "tema_1789551079_3_1789551338",
+        "num": "3.",
+        "titol": "Límits a l’extensió de l’incendi"
+      },
+      {
+        "row_id": "tema_1789551079_4_1789551340",
+        "num": "4.",
+        "titol": "Recursos per a la lluita contra incendis"
+      },
+      {
+        "row_id": "tema_1789551079_5_1789551342",
+        "num": "5.",
+        "titol": "La prevenció operativa"
+      },
+      {
+        "row_id": "tema_1789551079_6_1789551345",
+        "num": "6.",
+        "titol": "Divulgació de la seguretat en cas d’incendi"
+      },
+      {
+        "row_id": "tema_1789551079_7_1789551346",
+        "num": "7.",
+        "titol": "Glossari de conceptes bàsics de prevenció d’incendis"
+      }
+    ]
+  },
+  {
+    "id": "tema_1789551088",
+    "codi": "TEMA 24.",
+    "nom": "Intervenció bàsica en incendis estructurals",
+    "apartats": [
+      {
+        "row_id": "tema_1789551088_1",
+        "num": "1.",
+        "titol": "Introducció"
+      },
+      {
+        "row_id": "tema_1789551088_2_1789551350",
+        "num": "2.",
+        "titol": "Coneixements bàsics en incendis estructurals"
+      },
+      {
+        "row_id": "tema_1789551088_3_1789551352",
+        "num": "3.",
+        "titol": "Valoració d’incendis estructurals"
+      },
+      {
+        "row_id": "tema_1789551088_4_1789551353",
+        "num": "4.",
+        "titol": "Maniobres d’intervenció"
+      },
+      {
+        "row_id": "tema_1789551088_5_1789551355",
+        "num": "5.",
+        "titol": "Seguretat"
+      }
+    ]
+  },
+  {
+    "id": "tema_1789551094",
+    "codi": "TEMA 25.",
+    "nom": "Intervenció bàsica en incendis forestals",
+    "apartats": [
+      {
+        "row_id": "tema_1789551094_1",
+        "num": "1.",
+        "titol": "Introducció als incendis forestals"
+      },
+      {
+        "row_id": "tema_1789551094_2_1789551367",
+        "num": "2.",
+        "titol": "Coneixements bàsics sobre incendis forestals"
+      },
+      {
+        "row_id": "tema_1789551094_3_1789551368",
+        "num": "3.",
+        "titol": "Valoració bàsica d’incendis forestals"
+      },
+      {
+        "row_id": "tema_1789551094_4_1789551371",
+        "num": "4.",
+        "titol": "Maniobres d’extinció en incendis forestals"
+      },
+      {
+        "row_id": "tema_1789551094_5_1789551373",
+        "num": "5.",
+        "titol": "Seguretat en incendis forestals"
+      }
+    ]
+  },
+  {
+    "id": "tema_1789551100",
+    "codi": "TEMA 26.",
+    "nom": "Intervenció bàsica en incendis varis",
+    "apartats": [
+      {
+        "row_id": "tema_1789551100_1",
+        "num": "1.",
+        "titol": "Introducció"
+      },
+      {
+        "row_id": "tema_1789551100_2_1789551376",
+        "num": "2.",
+        "titol": "Intervenció en incendis de vehicles"
+      },
+      {
+        "row_id": "tema_1789551100_3_1789551378",
+        "num": "3.",
+        "titol": "Intervenció en incendis de contenidors"
+      },
+      {
+        "row_id": "tema_1789551100_4_1789551380",
+        "num": "4.",
+        "titol": "Intervenció en altres tipus d’incendis urbans"
+      }
+    ]
+  },
+  {
+    "id": "tema_1789551260",
+    "codi": "TEMA 27.",
+    "nom": "Intervenció bàsica en riscos NRBQ",
+    "apartats": [
+      {
+        "row_id": "tema_1789551260_1",
+        "num": "1.",
+        "titol": "Introducció"
+      },
+      {
+        "row_id": "tema_1789551260_2_1789551383",
+        "num": "2.",
+        "titol": "Coneixements bàsics"
+      },
+      {
+        "row_id": "tema_1789551260_3_1789551385",
+        "num": "3.",
+        "titol": "Valoració"
+      },
+      {
+        "row_id": "tema_1789551260_4_1789551387",
+        "num": "4.",
+        "titol": "Maniobres d’intervenció"
+      },
+      {
+        "row_id": "tema_1789551260_5_1789551390",
+        "num": "5.",
+        "titol": "Seguretat"
+      }
+    ]
+  },
+  {
+    "id": "tema_1789551265",
+    "codi": "TEMA 28.",
+    "nom": "Intervenció bàsica en assistència sanitària",
+    "apartats": [
+      {
+        "row_id": "tema_1789551265_1",
+        "num": "1.",
+        "titol": "Introducció"
+      },
+      {
+        "row_id": "tema_1789551265_2_1789551394",
+        "num": "2.",
+        "titol": "Coneixements generals"
+      },
+      {
+        "row_id": "tema_1789551265_3_1789551397",
+        "num": "3.",
+        "titol": "Valoració"
+      },
+      {
+        "row_id": "tema_1789551265_4_1789551399",
+        "num": "4.",
+        "titol": "Maniobres en assistències sanitàries"
+      },
+      {
+        "row_id": "tema_1789551265_5_1789551402",
+        "num": "5.",
+        "titol": "Seguretat en l’assistència sanitària"
+      }
+    ]
+  },
+  {
+    "id": "tema_1789551270",
+    "codi": "TEMA 29.",
+    "nom": "Intervenció bàsica en incidents de múltiples víctimes",
+    "apartats": [
+      {
+        "row_id": "tema_1789551270_1",
+        "num": "1.",
+        "titol": "Introducció"
+      },
+      {
+        "row_id": "tema_1789551270_2_1789551407",
+        "num": "2.",
+        "titol": "Classificació i triatge START"
+      },
+      {
+        "row_id": "tema_1789551270_3_1789551409",
+        "num": "3.",
+        "titol": "Organització de la intervenció"
+      },
+      {
+        "row_id": "tema_1789551270_4_1789551412",
+        "num": "4.",
+        "titol": "Seguretat"
+      }
+    ]
+  },
+  {
+    "id": "tema_1789551275",
+    "codi": "TEMA 30.",
+    "nom": "Intervenció bàsica en estructures col·lapsades",
+    "apartats": [
+      {
+        "row_id": "tema_1789551275_1",
+        "num": "1.",
+        "titol": "Introducció"
+      },
+      {
+        "row_id": "tema_1789551275_2_1789551416",
+        "num": "2.",
+        "titol": "Valoració del col·lapse estructural"
+      },
+      {
+        "row_id": "tema_1789551275_3_1789551418",
+        "num": "3.",
+        "titol": "Maniobres d’intervenció"
+      },
+      {
+        "row_id": "tema_1789551275_4_1789551420",
+        "num": "4.",
+        "titol": "Apuntalaments"
+      },
+      {
+        "row_id": "tema_1789551275_5_1789551422",
+        "num": "5.",
+        "titol": "Senyalització"
+      },
+      {
+        "row_id": "tema_1789551275_6_1789551426",
+        "num": "6.",
+        "titol": "Mesures de seguretat"
+      }
+    ]
+  },
+  {
+    "id": "tema_1789551282",
+    "codi": "TEMA 31.",
+    "nom": "Intervenció bàsica en salvaments al medi natural terrestre",
+    "apartats": [
+      {
+        "row_id": "tema_1789551282_1",
+        "num": "1.",
+        "titol": "Introducció"
+      },
+      {
+        "row_id": "tema_1789551282_2_1789551430",
+        "num": "2.",
+        "titol": "Coneixements generals"
+      },
+      {
+        "row_id": "tema_1789551282_3_1789551431",
+        "num": "3.",
+        "titol": "Valoració"
+      },
+      {
+        "row_id": "tema_1789551282_4_1789551433",
+        "num": "4.",
+        "titol": "Maniobres d’intervenció en rescats"
+      },
+      {
+        "row_id": "tema_1789551282_5_1789551437",
+        "num": "5.",
+        "titol": "Maniobres en recerques"
+      },
+      {
+        "row_id": "tema_1789551282_6_1789551440",
+        "num": "6.",
+        "titol": "Organització de la intervenció en recerques"
+      },
+      {
+        "row_id": "tema_1789551282_7_1789551443",
+        "num": "7.",
+        "titol": "Seguretat"
+      }
+    ]
+  },
+  {
+    "id": "tema_1789551290",
+    "codi": "TEMA 32.",
+    "nom": "Accidents de mobilitat viària",
+    "apartats": [
+      {
+        "row_id": "tema_1789551290_1",
+        "num": "1.",
+        "titol": "Introducció"
+      },
+      {
+        "row_id": "tema_1789551290_2_1789551456",
+        "num": "2.",
+        "titol": "Coneixements generals"
+      },
+      {
+        "row_id": "tema_1789551290_3_1789551457",
+        "num": "3.",
+        "titol": "Valoració"
+      },
+      {
+        "row_id": "tema_1789551290_4_1789551459",
+        "num": "4.",
+        "titol": "Maniobres en accidents de mobilitat viària"
+      },
+      {
+        "row_id": "tema_1789551290_5_1789551461",
+        "num": "5.",
+        "titol": "Seguretat en accidents de mobilitat"
+      }
+    ]
+  },
+  {
+    "id": "tema_1789551295",
+    "codi": "TEMA 33.",
+    "nom": "Intervenció bàsica en rescat urbà",
+    "apartats": [
+      {
+        "row_id": "tema_1789551295_1",
+        "num": "1.",
+        "titol": "Introducció"
+      },
+      {
+        "row_id": "tema_1789551295_2_1789551464",
+        "num": "2.",
+        "titol": "Intervencions en alçada"
+      },
+      {
+        "row_id": "tema_1789551295_3_1789551466",
+        "num": "3.",
+        "titol": "Intervencions en ascensors"
+      }
+    ]
+  },
+  {
+    "id": "tema_1789551302",
+    "codi": "TEMA 34.",
+    "nom": "Intervenció bàsica en inundacions",
+    "apartats": [
+      {
+        "row_id": "tema_1789551302_1",
+        "num": "1.",
+        "titol": "Introducció"
+      },
+      {
+        "row_id": "tema_1789551302_2_1789551469",
+        "num": "2.",
+        "titol": "Coneixements generals del medi aquàtic"
+      },
+      {
+        "row_id": "tema_1789551302_3_1789551471",
+        "num": "3.",
+        "titol": "Valoració del risc en inundacions"
+      },
+      {
+        "row_id": "tema_1789551302_4_1789551473",
+        "num": "4.",
+        "titol": "Maniobres d’intervenció en inundacions"
+      },
+      {
+        "row_id": "tema_1789551302_5_1789551475",
+        "num": "5.",
+        "titol": "Seguretat en intervencions per inundacions"
+      }
+    ]
+  }
+]
