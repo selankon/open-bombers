@@ -4,7 +4,7 @@ import { DragEvent, useCallback, useEffect, useLayoutEffect, useMemo, useRef, us
 import { useTranslation } from 'react-i18next'
 import { ConfirmDialog } from '~components/Layout/ConfirmDialog'
 import { useEditorState } from '~components/Mapes/Editor/useEditorState'
-import { eraseAt, findItem, moveItem, removeItem, resizeImatge, restyleItem } from '~components/Mapes/content'
+import { findItem, moveItem, removeItem, resizeImatge, restyleItem } from '~components/Mapes/content'
 import { imageFromData, imageFromFile } from '~components/Mapes/images'
 import { newId } from '~components/Mapes/logic'
 import { MapaColor, MapaTrace } from '~components/Mapes/types'
@@ -13,12 +13,13 @@ import { TemariPdf } from '~components/Temari/types'
 import { usePdfActions } from '~components/Temari/usePdfActions'
 import { PDF } from '~utils/constants'
 import { useExportPdf } from '../export/useExportPdf'
-import { countPagines, onPagina, paginaOf } from '../logic'
+import { countPagines, eraseAll, onPagina, paginaOf, removeMarca, updateMarca } from '../logic'
 import type { PDFDocumentProxy } from '../pdfjs'
 import { useSaveAnotacions } from '../queries'
-import { BrushPdf, EinaPdf, PageSize, Pagines, SeleccioPdf } from '../types'
+import { BrushPdf, EinaPdf, MarcaText, MarcaTipus, PageSize, Pagines, SeleccioPdf, TextBrush } from '../types'
 import { PageHandlers } from './handlers'
 import { PdfPage } from './PdfPage'
+import { hasTextSelection, readTextSelection } from './textSelection'
 import { VisorHeader } from './VisorHeader'
 import { VisorToolbar } from './VisorToolbar'
 
@@ -36,6 +37,9 @@ const DEFAULT_BRUSHES: Record<BrushTool, BrushPdf> = {
   subratllador: { color: 'groc', gruix: PDF.GRUIX.subratllador[1], forma: 'rect' },
   forma: { color: 'vermell', gruix: PDF.GRUIX.forma[1], forma: 'fletxa' },
 }
+
+// Text tool: highlights in yellow, underlines in red
+const DEFAULT_TEXT_BRUSH: TextBrush = { tipus: 'ressaltat', colors: { ressaltat: 'groc', subratllat: 'vermell' } }
 
 // Room for the floating header and the toolbars, so the first and last pages can be read whole
 const TOP_PAD = 72
@@ -74,6 +78,9 @@ export const Visor = ({ pdf, title, subtitle, doc, sizes, initial }: VisorProps)
     useEditorState<Pagines>(initialContent)
   const [tool, setToolState] = useState<EinaPdf>('seleccio')
   const [brushes, setBrushes] = useState(DEFAULT_BRUSHES)
+  const [textBrush, setTextBrush] = useState(DEFAULT_TEXT_BRUSH)
+  // Some text of the pages is selected (text tool): the toolbar offers to mark it
+  const [hasTextSel, setHasTextSel] = useState(false)
   const [selected, setSelected] = useState<SeleccioPdf | null>(null)
   const [openNoteId, setOpenNoteId] = useState<string | null>(null)
   const [penSeen, setPenSeen] = useState(false)
@@ -90,6 +97,8 @@ export const Visor = ({ pdf, title, subtitle, doc, sizes, initial }: VisorProps)
   toolRef.current = tool
   const brushesRef = useRef(brushes)
   brushesRef.current = brushes
+  const textBrushRef = useRef(textBrush)
+  textBrushRef.current = textBrush
   const pageRef = useRef(page)
   pageRef.current = page
   const { exportPdf, busy: exporting } = useExportPdf()
@@ -325,7 +334,7 @@ export const Visor = ({ pdf, title, subtitle, doc, sizes, initial }: VisorProps)
       // The eraser makes one undo step, created at the first stroke it really removes
       onEraseStart: () => (erasing.current = false),
       onErase: (n, x, y, r) => {
-        const fn = onPagina(n, (p) => eraseAt(p, x, y, r))
+        const fn = onPagina(n, (p) => eraseAll(p, x, y, r))
         if (fn(contentRef.current) === contentRef.current) return
         if (!erasing.current) {
           erasing.current = true
@@ -393,23 +402,94 @@ export const Visor = ({ pdf, title, subtitle, doc, sizes, initial }: VisorProps)
     openNote(null)
   })
 
+  const onTextBrush = useStable((p: Partial<{ tipus: MarcaTipus; color: MapaColor }>) =>
+    setTextBrush((b) => {
+      const tipus = p.tipus ?? b.tipus
+      return { tipus, colors: p.color ? { ...b.colors, [tipus]: p.color } : b.colors }
+    })
+  )
+
   const setBrush = useStable((p: Partial<BrushPdf>) =>
     setBrushes((b) => ({ ...b, [brushTool]: { ...b[brushTool], ...p } }))
   )
 
-  const item = selected ? findItem(paginaOf(content, selected.page), selected) : undefined
+  const selectedPagina = selected ? paginaOf(content, selected.page) : null
+  const item =
+    !selected || !selectedPagina
+      ? undefined
+      : selected.kind === 'marca'
+        ? selectedPagina.marques.find((m) => m.id === selected.id)
+        : findItem(selectedPagina, { kind: selected.kind, id: selected.id })
   // An undo can remove the selected annotation
   const activeSelection = item ? selected : null
+  const marca = selected?.kind === 'marca' ? (item as MarcaText | undefined) : undefined
 
-  const restyle = useStable(
-    (p: { color?: MapaColor; gruix?: number }) =>
-      selected && apply(onPagina(selected.page, (pg) => restyleItem(pg, selected, p)))
-  )
+  const restyle = useStable((p: { color?: MapaColor; gruix?: number; tipus?: MarcaTipus }) => {
+    if (!selected) return
+    const { kind, id } = selected
+    if (kind === 'marca') {
+      const { color, tipus } = p
+      return apply(
+        onPagina(selected.page, (pg) => updateMarca(pg, id, { ...(color && { color }), ...(tipus && { tipus }) }))
+      )
+    }
+    apply(onPagina(selected.page, (pg) => restyleItem(pg, { kind, id }, p)))
+  })
   const removeSelected = useStable(() => {
     if (!selected) return
-    apply(onPagina(selected.page, (pg) => removeItem(pg, selected)))
+    const { kind, id } = selected
+    apply(onPagina(selected.page, (pg) => (kind === 'marca' ? removeMarca(pg, id) : removeItem(pg, { kind, id }))))
     setSelected(null)
   })
+
+  // ---- Text tool: the selected text becomes a highlight or an underline ----
+  const markSelection = useStable(() => {
+    const bySelection = readTextSelection(pagesRef.current, sizes)
+    const pages = Object.keys(bySelection).map(Number)
+    window.getSelection()?.removeAllRanges()
+    setHasTextSel(false)
+    if (!pages.length) return
+    const { tipus, colors } = textBrushRef.current
+    const add = (n: number) =>
+      onPagina(n, (p) => ({
+        ...p,
+        marques: [...p.marques, { id: newId(), tipus, color: colors[tipus], ...bySelection[n] }],
+      }))
+    // One undo step, even when the selection spans several pages
+    if (pages.length === 1) return apply(add(pages[0]))
+    checkpoint()
+    pages.forEach((n) => patch(add(n)))
+  })
+
+  // While the text tool is on: follow the selection (for the toolbar) and, with a mouse, mark on release
+  useEffect(() => {
+    if (tool !== 'text') return
+    let timer: ReturnType<typeof setTimeout> | undefined
+    let mouseInPages = false
+    const onSelectionChange = () => {
+      clearTimeout(timer)
+      timer = setTimeout(() => setHasTextSel(hasTextSelection(pagesRef.current)), PDF.SELECTION_DEBOUNCE)
+    }
+    const onDown = (e: PointerEvent) => {
+      mouseInPages = e.pointerType === 'mouse' && e.button === 0 && !!pagesRef.current?.contains(e.target as Node)
+    }
+    const onUp = (e: PointerEvent) => {
+      if (e.pointerType !== 'mouse' || !mouseInPages) return
+      mouseInPages = false
+      // After the browser has finished the selection (double click selects a word)
+      setTimeout(() => hasTextSelection(pagesRef.current) && markSelection())
+    }
+    document.addEventListener('selectionchange', onSelectionChange)
+    document.addEventListener('pointerdown', onDown, true)
+    document.addEventListener('pointerup', onUp, true)
+    return () => {
+      clearTimeout(timer)
+      document.removeEventListener('selectionchange', onSelectionChange)
+      document.removeEventListener('pointerdown', onDown, true)
+      document.removeEventListener('pointerup', onUp, true)
+      setHasTextSel(false)
+    }
+  }, [tool, markSelection])
 
   // ---- Pictures: placed on the page in view, in the middle of its visible part ----
   const insertImage = useStable(async (file: Blob) => {
@@ -614,6 +694,11 @@ export const Visor = ({ pdf, title, subtitle, doc, sizes, initial }: VisorProps)
         onImage={() => fileRef.current?.click()}
         brush={brush}
         onBrush={setBrush}
+        textBrush={textBrush}
+        onTextBrush={onTextBrush}
+        hasTextSelection={hasTextSel}
+        onMarkSelection={markSelection}
+        marcaTipus={marca?.tipus ?? null}
         selected={activeSelection}
         itemColor={(item as { color?: MapaColor } | undefined)?.color ?? null}
         itemGruix={(item as { gruix?: number } | undefined)?.gruix ?? null}
@@ -648,9 +733,9 @@ export const Visor = ({ pdf, title, subtitle, doc, sizes, initial }: VisorProps)
         onConfirm={onClear}
         isDestructive
         title={t('anotacions.clear_title', { defaultValue: 'Esborrar totes les anotacions?' })}
-        body={t('anotacions.clear_body', {
+        body={t('anotacions.clear_body_all', {
           defaultValue:
-            'S’esborraran els traços, les formes, les imatges i les notes de totes les pàgines d’aquest PDF. El PDF original no es toca, i mentre no surtis del lector ho pots desfer amb Desfés.',
+            'S’esborraran els traços, els ressaltats, les formes, les imatges i les notes de totes les pàgines d’aquest PDF. El PDF original no es toca, i mentre no surtis del lector ho pots desfer amb Desfés.',
         })}
         confirmLabel={t('anotacions.clear_confirm', { defaultValue: 'Esborra-ho tot' })}
       />

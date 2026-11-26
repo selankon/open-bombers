@@ -3,6 +3,7 @@ import {
   PiNote,
   PiNotePencil,
   PiTextUnderline,
+  PiTextAUnderline,
   PiArrowUpRight,
   PiCircle,
   PiCursor,
@@ -147,5 +148,6 @@ export const icons = {
   note: PiNote,
   annotated: PiNotePencil,
   underline: PiTextUnderline,
+  textMark: PiTextAUnderline,
   fitWidth: PiArrowsOutLineHorizontal,
 }

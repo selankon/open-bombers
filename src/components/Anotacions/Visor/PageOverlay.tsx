@@ -7,6 +7,7 @@ import { ItemRef } from '~components/Mapes/types'
 import { MAPA, PDF } from '~utils/constants'
 import { BrushPdf, EinaPdf, PageSize, PaginaAnotacions, SeleccioPdf } from '../types'
 import { PageHandlers, trackPointer } from './handlers'
+import { HighlightsLayer, MarquesInkLayer } from './MarquesLayer'
 
 type Pt = { x: number; y: number }
 
@@ -56,7 +57,8 @@ export const PageOverlay = ({
   const propsRef = useRef({ page, size, pagina, brush, tool, handlers })
   propsRef.current = { page, size, pagina, brush, tool, handlers }
 
-  const drawing = tool !== 'seleccio'
+  // `text` leaves the pointer to the text layer (the user selects the text to mark)
+  const drawing = tool !== 'seleccio' && tool !== 'text'
 
   // Client point → page point. Uses the real box, so it also works mid-pinch (scaled with a transform).
   const toPage = (e: { clientX: number; clientY: number }) => {
@@ -192,9 +194,20 @@ export const PageOverlay = ({
     })
   }, [])
 
+  // A tap on a highlight or underline selects it (a drag over it still scrolls)
+  const onMarcaPointerDown = useCallback((id: string, e: PointerEvent) => {
+    if (e.button !== 0) return
+    e.stopPropagation()
+    trackPointer(e, MAPA.DRAG_THRESHOLD, {
+      onDrag: () => undefined,
+      onTap: () => propsRef.current.handlers.onSelect({ page: propsRef.current.page, kind: 'marca', id }),
+    })
+  }, [])
+
+  const interactive = tool === 'seleccio'
   const itemProps = {
-    interactive: !drawing,
-    selected: selected ? { kind: selected.kind, id: selected.id } : null,
+    interactive,
+    selected: selected && selected.kind !== 'marca' ? { kind: selected.kind, id: selected.id } : null,
     onItemPointerDown,
     palette: 'pdf' as const,
   }
@@ -220,11 +233,18 @@ export const PageOverlay = ({
         transformOrigin='0 0'
         style={{ transform: `scale(${scale})`, mixBlendMode: 'multiply' }}
       >
+        <HighlightsLayer marques={pagina.marques} />
         <TracesLayer traces={pagina.traces.filter((tr) => tr.eina === 'subratllador')} map={NO_NODES} {...itemProps} />
         {draft?.kind === 'trace' && draft.eina === 'subratllador' && <DraftLayer draft={draft} palette='pdf' />}
       </Box>
       {/* Everything else, in PDF points scaled to the screen */}
       <Box position='absolute' left={0} top={0} transformOrigin='0 0' style={{ transform: `scale(${scale})` }}>
+        <MarquesInkLayer
+          marques={pagina.marques}
+          selectedId={selected?.kind === 'marca' ? selected.id : null}
+          interactive={interactive}
+          onMarcaPointerDown={onMarcaPointerDown}
+        />
         <ImatgesLayer
           imatges={pagina.imatges}
           {...itemProps}

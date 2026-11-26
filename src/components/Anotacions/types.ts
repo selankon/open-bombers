@@ -67,13 +67,20 @@ export interface AnotacionsResum {
 
 export type SaveAnotacionsParams = { id: string; pagines: Pagines }
 
-// Reader tools. `seleccio` reads, scrolls, selects text and moves annotations.
-export type EinaPdf = 'seleccio' | 'ploma' | 'subratllador' | 'forma' | 'goma' | 'nota'
+// Reader tools. `seleccio` reads, scrolls, selects text and moves annotations; `text` highlights or
+// underlines the text the user selects.
+export type EinaPdf = 'seleccio' | 'text' | 'ploma' | 'subratllador' | 'forma' | 'goma' | 'nota'
 
 export type BrushPdf = { color: MapaColor; gruix: number; forma: FormaTipus }
 
-// Selected annotation (strokes, shapes and pictures; notes open their own popover)
-export type SeleccioPdf = { page: number; kind: 'trace' | 'forma' | 'imatge'; id: string }
+// Text tool: highlight or underline, and the color last used for each
+export type TextBrush = { tipus: MarcaTipus; colors: Record<MarcaTipus, MapaColor> }
+
+// Selected annotation (strokes, shapes, pictures and text marks; notes open their own popover)
+export type SeleccioPdf = { page: number; kind: 'trace' | 'forma' | 'imatge' | 'marca'; id: string }
+
+// A rectangle in PDF points of a page
+export type RectPdf = MarcaText['rects'][number]
 
 // Size of a page in PDF points (scale 1)
 export type PageSize = { w: number; h: number }
