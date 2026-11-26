@@ -167,7 +167,8 @@ export const PdfPage = memo((props: PdfPageProps) => {
 
   const w = size.w * scale
   const h = size.h * scale
-  const drawingTool = props.tool !== 'seleccio'
+  // The text can be selected to read / copy it, or to highlight or underline it
+  const selectable = props.tool === 'seleccio' || props.tool === 'text'
 
   return (
     <Box
@@ -183,7 +184,7 @@ export const PdfPage = memo((props: PdfPageProps) => {
     >
       <Box ref={canvasHost} position='absolute' inset={0} aria-hidden />
       {!drawn && <Skeleton position='absolute' inset={0} startColor='pdf.page' endColor='surfaceMuted' />}
-      <Box ref={textHost} className='textLayer' sx={textLayerSx} pointerEvents={drawingTool ? 'none' : 'auto'} />
+      <Box ref={textHost} className='textLayer' sx={textLayerSx} pointerEvents={selectable ? 'auto' : 'none'} />
       {near && (
         <>
           <PageOverlay

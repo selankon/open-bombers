@@ -1,5 +1,6 @@
 import { MAPA_COLORS, MapaColor } from '~components/Mapes/types'
-import { MARCA_TIPUS, MarcaTipus, PaginaAnotacions, Pagines, PdfAnotacions } from './types'
+import { eraseAt } from '~components/Mapes/content'
+import { MARCA_TIPUS, MarcaText, MarcaTipus, PaginaAnotacions, Pagines, PdfAnotacions, RectPdf } from './types'
 
 /**
  * Pure helpers over PDF annotations. Like the mind map helpers, they return the same object
@@ -13,7 +14,10 @@ export const countPagina = (p: PaginaAnotacions) =>
 
 export const countPagines = (pagines: Pagines) => Object.values(pagines).reduce((n, p) => n + countPagina(p), 0)
 
-export const paginaOf = (pagines: Pagines, page: number) => pagines[page] ?? emptyPagina()
+// Shared empty page: pages without annotations keep the same props (memoized pages don't re-render)
+const EMPTY_PAGINA: PaginaAnotacions = Object.freeze(emptyPagina())
+
+export const paginaOf = (pagines: Pagines, page: number) => pagines[page] ?? EMPTY_PAGINA
 
 /** Applies a change to one page. Pages left empty are removed. */
 export const onPagina =
@@ -32,6 +36,73 @@ export const annotatedPages = (pagines: Pagines) =>
     .map(Number)
     .filter((n) => countPagina(pagines[n]) > 0)
     .sort((a, b) => a - b)
+
+// ---- Text marks (highlight / underline of selected text) ----
+
+/**
+ * Merges the rectangles of a text selection into one per line (pdf.js splits the text in one span per
+ * run). Rects on the same line overlap vertically; a wide horizontal gap (another column) starts a new
+ * rect. Tiny rects (empty spans, line breaks) are dropped.
+ */
+export const mergeLineRects = (rects: RectPdf[], minSize = 1): RectPdf[] => {
+  const lines: RectPdf[][] = []
+  const sorted = rects.filter((r) => r.w >= minSize && r.h >= minSize).sort((a, b) => a.y + a.h / 2 - (b.y + b.h / 2))
+  for (const r of sorted) {
+    const line = lines.find((l) =>
+      l.some((o) => Math.min(o.y + o.h, r.y + r.h) - Math.max(o.y, r.y) >= Math.min(o.h, r.h) * 0.5)
+    )
+    if (line) line.push(r)
+    else lines.push([r])
+  }
+  const out: RectPdf[] = []
+  for (const line of lines) {
+    line.sort((a, b) => a.x - b.x)
+    let cur = { ...line[0] }
+    for (const r of line.slice(1)) {
+      const lineH = Math.max(cur.h, r.h)
+      if (r.x - (cur.x + cur.w) > lineH * 3) {
+        out.push(cur)
+        cur = { ...r }
+        continue
+      }
+      const x2 = Math.max(cur.x + cur.w, r.x + r.w)
+      const y1 = Math.min(cur.y, r.y)
+      const y2 = Math.max(cur.y + cur.h, r.y + r.h)
+      cur = { x: cur.x, y: y1, w: x2 - cur.x, h: y2 - y1 }
+    }
+    out.push(cur)
+  }
+  return out.sort((a, b) => a.y - b.y || a.x - b.x)
+}
+
+// Height of the band an underline reacts to (PDF points)
+const UNDERLINE_HIT = 6
+
+/** Area of a mark that reacts to taps and the eraser (an underline only near its line) */
+export const marcaHitRects = (m: MarcaText): RectPdf[] =>
+  m.tipus === 'ressaltat'
+    ? m.rects
+    : m.rects.map((r) => ({ x: r.x, y: r.y + r.h - UNDERLINE_HIT / 2, w: r.w, h: UNDERLINE_HIT }))
+
+const hitsRect = (r: RectPdf, x: number, y: number, reach: number) =>
+  x >= r.x - reach && x <= r.x + r.w + reach && y >= r.y - reach && y <= r.y + r.h + reach
+
+/** Removes the strokes, shapes and text marks touched by the eraser at (x, y) */
+export const eraseAll = (p: PaginaAnotacions, x: number, y: number, r: number): PaginaAnotacions => {
+  const drawn = eraseAt(p, x, y, r)
+  const marques = p.marques.filter((m) => !marcaHitRects(m).some((rc) => hitsRect(rc, x, y, r)))
+  return marques.length === p.marques.length ? drawn : { ...drawn, marques }
+}
+
+export const updateMarca = (p: PaginaAnotacions, id: string, patch: Partial<Omit<MarcaText, 'id'>>) => ({
+  ...p,
+  marques: p.marques.map((m) => (m.id === id ? { ...m, ...patch } : m)),
+})
+
+export const removeMarca = (p: PaginaAnotacions, id: string) => ({
+  ...p,
+  marques: p.marques.filter((m) => m.id !== id),
+})
 
 // ---- Reading stored data (backups and old versions must never break the reader) ----
 
@@ -58,6 +129,9 @@ export const migratePagina = (raw: any): PaginaAnotacions => ({
     withId(m) && Array.isArray(m.rects)
       ? {
           ...m,
+          rects: arr(m.rects, (r) =>
+            [r?.x, r?.y, r?.w, r?.h].every((v) => num(v) !== null) ? { x: r.x, y: r.y, w: r.w, h: r.h } : null
+          ),
           tipus: MARCA_TIPUS.includes(m.tipus) ? (m.tipus as MarcaTipus) : 'ressaltat',
           color: color(m.color),
         }

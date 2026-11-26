@@ -128,6 +128,8 @@ export const PDF = {
   MAX_CANVAS_PX: 16_000_000,
   // Autosave debounce (ms)
   SAVE_DELAY: 600,
+  // Wait after the text selection changes before the toolbar follows it (ms)
+  SELECTION_DEBOUNCE: 150,
   // Stroke widths for each tool (PDF points)
   GRUIX: {
     ploma: [1.5, 2.5, 4],

@@ -2,23 +2,38 @@ import { Box, Button, Flex, Icon, Stack, Text, Tooltip } from '@chakra-ui/react'
 import { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { GlassSurface } from '~components/Layout/Glass/GlassSurface'
+import { ColorSwatches } from '~components/Mapes/Editor/StylePanel'
 import { BrushPanel, PopoverPanel, ToolButton } from '~components/Mapes/Editor/Toolbar'
 import { FORMA_TIPUS, FormaTipus, MapaColor } from '~components/Mapes/types'
 import { icons } from '~theme/icons'
 import { PDF } from '~utils/constants'
-import { BrushPdf, EinaPdf, SeleccioPdf } from '../types'
+import { BrushPdf, EinaPdf, MarcaTipus, SeleccioPdf, TextBrush } from '../types'
 
 const Divider = () => <Box w='1px' h={6} bg='border' mx={1} flexShrink={0} />
 
 const widthsOf = (tool: EinaPdf) =>
   PDF.GRUIX[tool === 'subratllador' ? 'subratllador' : tool === 'forma' ? 'forma' : 'ploma']
 
-const BrushDot = ({ color, size, faded }: { color: MapaColor; size: number; faded?: boolean }) => (
+// Buttons a bit smaller on phones, so the tools fit in one row at 375 px
+const compact = { minW: { base: 9, sm: 10 }, h: { base: 9, sm: 10 } }
+
+const BrushDot = ({
+  color,
+  size,
+  faded,
+  tint,
+}: {
+  color: MapaColor
+  size: number
+  faded?: boolean
+  // Marker tint (highlights) instead of the ink color
+  tint?: boolean
+}) => (
   <Box
     w={`${size}px`}
     h={`${size}px`}
     borderRadius='full'
-    bg={`pdf.${color}`}
+    bg={tint ? `pdf.marca.${color}` : `pdf.${color}`}
     opacity={faded ? 0.6 : 1}
     boxShadow='0 0 0 2px var(--chakra-colors-surface)'
   />
@@ -48,11 +63,60 @@ const BrushButton = ({
         <ToolButton
           label={t('anotacions.tool.brush', { defaultValue: 'Color i gruix' })}
           icon={<BrushDot color={color} size={[8, 12, 16][i] ?? 12} faded={faded} />}
+          {...compact}
         />
       }
     >
       <BrushPanel color={color} gruix={gruix} widths={widths} onColor={onColor} onGruix={onGruix} palette='pdf' />
     </PopoverPanel>
+  )
+}
+
+const ColorButton = ({
+  color,
+  tipus,
+  onColor,
+}: {
+  color: MapaColor
+  tipus: MarcaTipus
+  onColor: (c: MapaColor) => void
+}) => {
+  const { t } = useTranslation()
+  return (
+    <PopoverPanel
+      trigger={
+        <ToolButton
+          label={t('anotacions.tool.color', { defaultValue: 'Color' })}
+          icon={<BrushDot color={color} size={14} tint={tipus === 'ressaltat'} />}
+          {...compact}
+        />
+      }
+    >
+      <ColorSwatches value={color} onChange={onColor} palette='pdf' />
+    </PopoverPanel>
+  )
+}
+
+// Highlight or underline
+const TipusButtons = ({ value, onChange }: { value: MarcaTipus; onChange: (t: MarcaTipus) => void }) => {
+  const { t } = useTranslation()
+  return (
+    <>
+      <ToolButton
+        label={t('anotacions.text.highlight', { defaultValue: 'Ressalta' })}
+        icon={<Icon as={icons.highlighter} />}
+        isActive={value === 'ressaltat'}
+        onClick={() => onChange('ressaltat')}
+        {...compact}
+      />
+      <ToolButton
+        label={t('anotacions.text.underline', { defaultValue: 'Subratlla' })}
+        icon={<Icon as={icons.underline} />}
+        isActive={value === 'subratllat'}
+        onClick={() => onChange('subratllat')}
+        {...compact}
+      />
+    </>
   )
 }
 
@@ -62,11 +126,18 @@ type VisorToolbarProps = {
   onImage: () => void
   brush: BrushPdf
   onBrush: (patch: Partial<BrushPdf>) => void
+  textBrush: TextBrush
+  onTextBrush: (patch: Partial<{ tipus: MarcaTipus; color: MapaColor }>) => void
+  // Text tool: some text is selected, and the action that marks it
+  hasTextSelection: boolean
+  onMarkSelection: () => void
+  // Type of the selected text mark (null when the selection is something else)
+  marcaTipus: MarcaTipus | null
   selected: SeleccioPdf | null
   itemColor: MapaColor | null
   itemGruix: number | null
   itemWidths: readonly number[]
-  onItemStyle: (patch: { color?: MapaColor; gruix?: number }) => void
+  onItemStyle: (patch: { color?: MapaColor; gruix?: number; tipus?: MarcaTipus }) => void
   onDelete: () => void
   canUndo: boolean
   canRedo: boolean
@@ -89,6 +160,11 @@ export const VisorToolbar = (p: VisorToolbarProps) => {
       id: 'seleccio',
       icon: icons.select,
       label: t('anotacions.tool.select', { defaultValue: 'Llegeix, selecciona i mou (Esc)' }),
+    },
+    {
+      id: 'text',
+      icon: icons.textMark,
+      label: t('anotacions.tool.text', { defaultValue: 'Ressalta o subratlla text' }),
     },
     { id: 'ploma', icon: icons.pen, label: t('anotacions.tool.pen', { defaultValue: 'Ploma' }) },
     {
@@ -114,7 +190,40 @@ export const VisorToolbar = (p: VisorToolbarProps) => {
   )
 
   let options: ReactNode
-  if (p.tool === 'ploma' || p.tool === 'subratllador' || p.tool === 'forma') {
+  if (p.tool === 'text') {
+    const { tipus } = p.textBrush
+    options = (
+      <>
+        <TipusButtons value={tipus} onChange={(v) => p.onTextBrush({ tipus: v })} />
+        <ColorButton color={p.textBrush.colors[tipus]} tipus={tipus} onColor={(color) => p.onTextBrush({ color })} />
+        <Tooltip
+          label={t('anotacions.text.select_first', { defaultValue: 'Selecciona text de la pàgina' })}
+          hasArrow
+          openDelay={400}
+          isDisabled={p.hasTextSelection}
+        >
+          <Button
+            size='sm'
+            borderRadius='full'
+            flexShrink={0}
+            ml={1}
+            isDisabled={!p.hasTextSelection}
+            // On pointer down: a tap elsewhere can clear the selection before the click arrives
+            onPointerDown={(e) => {
+              if (e.button !== 0) return
+              e.preventDefault()
+              p.onMarkSelection()
+            }}
+            onClick={(e) => e.detail === 0 && p.onMarkSelection()}
+          >
+            {tipus === 'ressaltat'
+              ? t('anotacions.text.apply_highlight', { defaultValue: 'Ressalta' })
+              : t('anotacions.text.apply_underline', { defaultValue: 'Subratlla' })}
+          </Button>
+        </Tooltip>
+      </>
+    )
+  } else if (p.tool === 'ploma' || p.tool === 'subratllador' || p.tool === 'forma') {
     options = (
       <>
         {p.tool === 'forma' &&
@@ -125,6 +234,7 @@ export const VisorToolbar = (p: VisorToolbarProps) => {
               icon={<Icon as={formaNames[f].icon} />}
               isActive={p.brush.forma === f}
               onClick={() => p.onBrush({ forma: f })}
+              {...compact}
             />
           ))}
         <BrushButton
@@ -138,13 +248,19 @@ export const VisorToolbar = (p: VisorToolbarProps) => {
       </>
     )
   } else if (p.tool === 'goma') {
-    options = hint(t('anotacions.eraser_hint', { defaultValue: 'Passa per sobre d’un traç per esborrar-lo' }))
+    options = hint(t('anotacions.eraser_hint_all', { defaultValue: 'Passa per sobre d’una anotació per esborrar-la' }))
   } else if (p.tool === 'nota') {
     options = hint(t('anotacions.note_hint', { defaultValue: 'Toca la pàgina on vols la nota' }))
   } else if (p.selected) {
     options = (
       <>
-        {p.selected.kind !== 'imatge' && p.itemColor && p.itemGruix !== null && (
+        {p.selected.kind === 'marca' && p.marcaTipus && p.itemColor && (
+          <>
+            <TipusButtons value={p.marcaTipus} onChange={(tipus) => p.onItemStyle({ tipus })} />
+            <ColorButton color={p.itemColor} tipus={p.marcaTipus} onColor={(color) => p.onItemStyle({ color })} />
+          </>
+        )}
+        {p.selected.kind !== 'imatge' && p.selected.kind !== 'marca' && p.itemColor && p.itemGruix !== null && (
           <BrushButton
             color={p.itemColor}
             gruix={p.itemGruix}
@@ -157,6 +273,7 @@ export const VisorToolbar = (p: VisorToolbarProps) => {
           label={t('anotacions.tool.delete', { defaultValue: 'Elimina (Supr)' })}
           icon={<Icon as={icons.delete} />}
           onClick={p.onDelete}
+          {...compact}
         />
       </>
     )
@@ -195,12 +312,14 @@ export const VisorToolbar = (p: VisorToolbarProps) => {
               icon={<Icon as={icons.undo} />}
               onClick={p.onUndo}
               isDisabled={!p.canUndo}
+              {...compact}
             />
             <ToolButton
               label={t('anotacions.tool.redo', { defaultValue: 'Refés (Ctrl+Maj+Z)' })}
               icon={<Icon as={icons.redo} />}
               onClick={p.onRedo}
               isDisabled={!p.canRedo}
+              {...compact}
             />
           </Flex>
         </GlassSurface>
@@ -223,6 +342,7 @@ export const VisorToolbar = (p: VisorToolbarProps) => {
                 icon={<Icon as={tl.icon} />}
                 isActive={p.tool === tl.id}
                 onClick={() => p.onTool(tl.id)}
+                {...compact}
               />
             ))}
             <Divider />
@@ -230,6 +350,7 @@ export const VisorToolbar = (p: VisorToolbarProps) => {
               label={t('anotacions.tool.image', { defaultValue: 'Afegeix una imatge (també pots enganxar-la)' })}
               icon={<Icon as={icons.image} />}
               onClick={p.onImage}
+              {...compact}
             />
           </Flex>
         </GlassSurface>
