@@ -1,13 +1,14 @@
 import { Flex, useBreakpointValue, useDisclosure, useToast } from '@chakra-ui/react'
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ConfirmDialog } from '~components/Layout/ConfirmDialog'
 import { useStudyData } from '~components/Layout/Contexts/StudyDataContext'
 import { ElementNotFound } from '~components/Layout/ElementNotFound'
 import { MainContainer, PageHeader } from '~components/Layout/LayoutComponents'
 import { SaveIndicator } from '~components/Layout/SaveIndicator'
-import { useRegisterStudy } from '~components/Repassos/queries'
+import { useRegisterStudy, useRemoveStudy } from '~components/Repassos/queries'
 import { RegisterStudyInitial, RegisterStudyModal } from '~components/Repassos/RegisterStudyModal'
+import { useDoneToggle } from '~components/Repassos/useDoneToggle'
 import { icons } from '~theme/icons'
 import { CSV_FILE_NAME, CSV_FLAT_FILE_NAME } from '~utils/constants'
 import { formatShort } from '~utils/dates'
@@ -24,15 +25,21 @@ import { Apartat, Tema } from './types'
 export const PlanificacioView = () => {
   const { t } = useTranslation()
   const toast = useToast()
-  const { structure, cells, derived, repassos, instances, avui } = useStudyData()
+  const { structure, cells, derived, repassos, instances, reviews, avui } = useStudyData()
   const { mutate: saveCell } = useSaveCell()
   const { mutateAsync: registerStudy, isPending: isRegistering } = useRegisterStudy()
+  const { mutateAsync: removeStudy, isPending: isRemoving } = useRemoveStudy()
+  const { toggleOne: toggleReview } = useDoneToggle()
   const isTable = useBreakpointValue({ base: false, md: true }, { ssr: false })
 
   const [filters, setFilters] = useState<PlanFilters>(EMPTY_FILTERS)
   const register = useDisclosure()
   const [registerInitial, setRegisterInitial] = useState<RegisterStudyInitial>()
-  const [dataClasse, setDataClasse] = useState<{ tema: Tema; date: string } | null>(null)
+  // Pending change of an existing class day ('' clears it), waiting for confirmation
+  const [studyChange, setStudyChange] = useState<{ apartat: Apartat; date: string } | null>(null)
+  // Latest study days, read by the stable handlers below (so table rows don't re-render)
+  const estudisRef = useRef(repassos.estudis)
+  estudisRef.current = repassos.estudis
 
   const saveError = useCallback(
     () =>
@@ -49,16 +56,46 @@ export const PlanificacioView = () => {
   )
 
   const handleSave = useCallback(
-    (rowId: string, colId: string, value: string, manual?: boolean) => {
-      saveCell({ rowId, colId, value, manual }, { onError: saveError })
-      // Setting the class day of a tema offers to register all its apartats on that day
-      if (colId === COL.DATA_CLASSE && value) {
-        const tema = structure.temes.find((tm) => tm.apartats[0]?.row_id === rowId)
-        if (tema) setDataClasse({ tema, date: value })
+    (rowId: string, colId: string, value: string, manual?: boolean) =>
+      saveCell({ rowId, colId, value, manual }, { onError: saveError }),
+    [saveCell, saveError]
+  )
+
+  const saveStudyDate = useCallback(
+    async (apartat: Apartat, date: string) => {
+      try {
+        if (date) await registerStudy({ rowIds: [apartat.row_id], date })
+        else await removeStudy([apartat.row_id])
+        toast({
+          title: date
+            ? t('plan.class_date_saved', { defaultValue: 'Classe del {{ date }} desada', date: formatShort(date) })
+            : t('plan.class_date_removed', { defaultValue: 'Data de classe treta' }),
+          status: 'success',
+          duration: 3000,
+        })
+      } catch {
+        saveError()
       }
     },
-    [saveCell, saveError, structure]
+    [registerStudy, removeStudy, toast, t, saveError]
   )
+
+  // The first class day is saved straight away; changing or clearing it restarts the reviews, so it asks first
+  const handleStudyDate = useCallback(
+    (_tema: Tema, apartat: Apartat, date: string) => {
+      const previous = estudisRef.current[apartat.row_id]
+      if (previous === date || (!previous && !date)) return
+      if (!previous) saveStudyDate(apartat, date)
+      else setStudyChange({ apartat, date })
+    },
+    [saveStudyDate]
+  )
+
+  const confirmStudyChange = async () => {
+    if (!studyChange) return
+    await saveStudyDate(studyChange.apartat, studyChange.date)
+    setStudyChange(null)
+  }
 
   const handleRegister = useCallback(
     (tema: Tema, apartat: Apartat) => {
@@ -67,6 +104,22 @@ export const PlanificacioView = () => {
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [repassos.estudis, register.onOpen]
+  )
+
+  // Opens the register dialog with every apartat of the tema (on their common class day, if any)
+  const handleRegisterTema = useCallback(
+    (tema: Tema) => {
+      const dates = new Set(tema.apartats.map((a) => estudisRef.current[a.row_id]))
+      const [date] = dates
+      setRegisterInitial({
+        temaId: tema.id,
+        rowIds: tema.apartats.map((a) => a.row_id),
+        date: dates.size === 1 ? date : undefined,
+      })
+      register.onOpen()
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [register.onOpen]
   )
 
   // Rows with reviews overdue or due today (or a manual "next review" day already reached)
@@ -101,26 +154,10 @@ export const PlanificacioView = () => {
   const visibleCount = visibleTemes.reduce((acc, tm) => acc + tm.apartats.length, 0)
 
   const exportCsv = (flat: boolean) => {
-    const csv = flat ? buildFlatCsv(structure, cells, derived) : buildOriginalCsv(structure, cells, derived)
+    const csv = flat
+      ? buildFlatCsv(structure, cells, derived, repassos.estudis)
+      : buildOriginalCsv(structure, cells, derived, repassos.estudis)
     downloadBlob(new Blob([csv], { type: 'text/csv;charset=utf-8' }), flat ? CSV_FLAT_FILE_NAME : CSV_FILE_NAME)
-  }
-
-  const confirmDataClasse = async () => {
-    if (!dataClasse) return
-    try {
-      await registerStudy({ rowIds: dataClasse.tema.apartats.map((a) => a.row_id), date: dataClasse.date })
-      toast({
-        title: t('repassos.study_registered', {
-          defaultValue: 'Estudi registrat ({{ count }} apartats)',
-          count: dataClasse.tema.apartats.length,
-        }),
-        status: 'success',
-        duration: 3000,
-      })
-    } catch {
-      saveError()
-    }
-    setDataClasse(null)
   }
 
   const listProps = {
@@ -129,8 +166,12 @@ export const PlanificacioView = () => {
     cells,
     derived,
     estudis: repassos.estudis,
+    reviews,
     onSave: handleSave,
+    onStudyDate: handleStudyDate,
+    onToggleReview: toggleReview,
     onRegister: handleRegister,
+    onRegisterTema: handleRegisterTema,
   }
 
   return (
@@ -171,22 +212,36 @@ export const PlanificacioView = () => {
 
       <RegisterStudyModal isOpen={register.isOpen} onClose={register.onClose} initial={registerInitial} />
       <ConfirmDialog
-        isOpen={!!dataClasse}
-        onClose={() => setDataClasse(null)}
-        title={t('plan.data_classe_title', { defaultValue: 'Registrar tots els apartats del tema en aquesta data?' })}
-        body={
-          dataClasse &&
-          t('plan.data_classe_body', {
-            defaultValue:
-              'Es registrarà l’estudi dels {{ count }} apartats de {{ tema }} el {{ date }} i es generaran els seus repassos. Els apartats que ja tenien data reiniciaran el cicle.',
-            count: dataClasse.tema.apartats.length,
-            tema: dataClasse.tema.codi,
-            date: formatShort(dataClasse.date),
-          })
+        isOpen={!!studyChange}
+        onClose={() => setStudyChange(null)}
+        isDestructive={!studyChange?.date}
+        title={
+          studyChange?.date
+            ? t('plan.class_date_change_title', { defaultValue: 'Canviar la data de classe?' })
+            : t('plan.class_date_remove_title', { defaultValue: 'Treure la data de classe?' })
         }
-        confirmLabel={t('plan.data_classe_confirm', { defaultValue: 'Registrar' })}
-        onConfirm={confirmDataClasse}
-        isLoading={isRegistering}
+        body={
+          studyChange &&
+          (studyChange.date
+            ? t('plan.class_date_change_body', {
+                defaultValue:
+                  'Els repassos pendents de «{{ apartat }}» es tornaran a calcular a partir del {{ date }} i es perdran els que hagis mogut a mà. Els repassos ja fets es queden com estan.',
+                apartat: `${studyChange.apartat.num} ${studyChange.apartat.titol}`,
+                date: formatShort(studyChange.date),
+              })
+            : t('plan.class_date_remove_body', {
+                defaultValue:
+                  'Els repassos de «{{ apartat }}» desapareixeran del calendari. Les tasques que ja has marcat a la taula no es perden.',
+                apartat: `${studyChange.apartat.num} ${studyChange.apartat.titol}`,
+              }))
+        }
+        confirmLabel={
+          studyChange?.date
+            ? t('plan.class_date_change_confirm', { defaultValue: 'Canviar la data' })
+            : t('plan.class_date_remove_confirm', { defaultValue: 'Treure la data' })
+        }
+        onConfirm={confirmStudyChange}
+        isLoading={isRegistering || isRemoving}
       />
     </MainContainer>
   )

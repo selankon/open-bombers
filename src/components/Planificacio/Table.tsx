@@ -2,12 +2,14 @@ import { Box, chakra, Flex, IconButton, Text, Tooltip } from '@chakra-ui/react'
 import { Fragment, memo, useLayoutEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { TemaMapaButton } from '~components/Mapes/TemaMapaButton'
+import { RowReviews } from '~components/Repassos/logic'
+import { Instance } from '~components/Repassos/types'
 import { TemaPdfButton } from '~components/Temari/TemaPdfButton'
 import { icons } from '~theme/icons'
 import { formatShort } from '~utils/dates'
 import { PLAN_CELL_STYLES } from './Cells'
 import { ColumnControl, columnWidth } from './ColumnControl'
-import { GROUP_LABELS, SUBGROUP_LABELS, TYPE_DESCRIPTIONS } from './columns'
+import { COL, GROUP_LABELS, SUBGROUP_LABELS, TYPE_DESCRIPTIONS } from './columns'
 import { temaRowId } from './structure'
 import {
   Apartat,
@@ -65,6 +67,8 @@ const SUBGROUP_CELL_STYLES = Object.fromEntries(
 )
 
 export type SaveHandler = (rowId: string, colId: string, value: string, manual?: boolean) => void
+export type StudyDateHandler = (tema: Tema, apartat: Apartat, date: string) => void
+export type ToggleReviewHandler = (instance: Instance, done: boolean) => void
 
 type PlanTableProps = {
   columns: Column[]
@@ -73,14 +77,30 @@ type PlanTableProps = {
   cells: Record<string, RowCells>
   derived: PlanDerived
   estudis: Record<string, string>
+  reviews: Record<string, RowReviews>
   onSave: SaveHandler
+  onStudyDate: StudyDateHandler
+  onToggleReview: ToggleReviewHandler
   onRegister: (tema: Tema, apartat: Apartat) => void
+  onRegisterTema: (tema: Tema) => void
 }
 
 /**
  * Spreadsheet with sticky 3-row header and 4 sticky left columns
  */
-export const PlanTable = ({ columns, temes, cells, derived, estudis, onSave, onRegister }: PlanTableProps) => {
+export const PlanTable = ({
+  columns,
+  temes,
+  cells,
+  derived,
+  estudis,
+  reviews,
+  onSave,
+  onStudyDate,
+  onToggleReview,
+  onRegister,
+  onRegisterTema,
+}: PlanTableProps) => {
   const { t } = useTranslation()
   const row1 = useRef<HTMLTableRowElement>(null)
   const row2 = useRef<HTMLTableRowElement>(null)
@@ -232,8 +252,12 @@ export const PlanTable = ({ columns, temes, cells, derived, estudis, onSave, onR
                     levelInfo={derived.apartatLevels[apartat.row_id]}
                     temaLevel={i === 0 ? derived.temaLevels[tema.id] : undefined}
                     studyDate={estudis[apartat.row_id]}
+                    reviews={reviews[apartat.row_id]}
                     onSave={onSave}
+                    onStudyDate={onStudyDate}
+                    onToggleReview={onToggleReview}
                     onRegister={onRegister}
+                    onRegisterTema={onRegisterTema}
                   />
                 )
               })}
@@ -279,12 +303,14 @@ const ColumnHeader = memo(({ column, top }: { column: Column; top: number }) => 
         top={`${top}px`}
         zIndex={3}
         h='170px'
+        cursor='help'
         minW={`${w}px`}
         w={`${w}px`}
         bg={`sg.${column.subgrup}.col`}
         verticalAlign='bottom'
       >
-        <Flex direction='column' align='center' justify='space-between' h='full' py={2} gap={1}>
+        {/* Every title starts at the bottom, right above the type label (always reserved, so they line up) */}
+        <Flex direction='column' align='center' justify='flex-end' h='full' py={2} gap={1}>
           <Box
             sx={vertical}
             fontSize='11px'
@@ -296,11 +322,15 @@ const ColumnHeader = memo(({ column, top }: { column: Column; top: number }) => 
           >
             {column.titol}
           </Box>
-          {typeLabel && (
-            <Text fontSize='9px' fontWeight={800} color={column.tipus === 'score' ? 'score.fg' : 'na.fg'}>
-              {typeLabel}
-            </Text>
-          )}
+          <Text
+            h='12px'
+            lineHeight='12px'
+            fontSize='9px'
+            fontWeight={800}
+            color={column.tipus === 'score' ? 'score.fg' : 'na.fg'}
+          >
+            {typeLabel}
+          </Text>
         </Flex>
       </Th>
     </Tooltip>
@@ -320,9 +350,20 @@ type PlanRowProps = {
   levelInfo: ApartatLevelInfo
   temaLevel?: TemaLevelInfo
   studyDate?: string
+  reviews?: RowReviews
   onSave: SaveHandler
+  onStudyDate: StudyDateHandler
+  onToggleReview: ToggleReviewHandler
   onRegister: (tema: Tema, apartat: Apartat) => void
+  onRegisterTema: (tema: Tema) => void
 }
+
+const sameInstance = (a?: Instance, b?: Instance) =>
+  a === b || (!!a && !!b && a.id === b.id && a.date === b.date && a.isDone === b.isDone && a.status === b.status)
+
+const sameReviews = (a?: RowReviews, b?: RowReviews) =>
+  a === b ||
+  (sameInstance(a?.d1, b?.d1) && sameInstance(a?.setmanal, b?.setmanal) && sameInstance(a?.mensual, b?.mensual))
 
 const sameLevel = (a?: ApartatLevelInfo, b?: ApartatLevelInfo) =>
   a === b ||
@@ -347,8 +388,12 @@ const PlanRow = memo(
     levelInfo,
     temaLevel,
     studyDate,
+    reviews,
     onSave,
+    onStudyDate,
+    onToggleReview,
     onRegister,
+    onRegisterTema,
   }: PlanRowProps) => {
     const { t } = useTranslation()
     const rowId = apartat.row_id
@@ -395,6 +440,21 @@ const PlanRow = memo(
                   _hover={{ bg: 'whiteAlpha.300' }}
                   _active={{ bg: 'whiteAlpha.400' }}
                 />
+                <IconButton
+                  aria-label={t('plan.register_tema', { defaultValue: 'Posar data de classe a tot el tema' })}
+                  title={t('plan.register_tema', { defaultValue: 'Posar data de classe a tot el tema' })}
+                  icon={<icons.register />}
+                  size='xs'
+                  minW={6}
+                  h={6}
+                  fontSize='sm'
+                  borderRadius='full'
+                  bg='transparent'
+                  color='white'
+                  _hover={{ bg: 'whiteAlpha.300' }}
+                  _active={{ bg: 'whiteAlpha.400' }}
+                  onClick={() => onRegisterTema(tema)}
+                />
               </Flex>
             </Td>
             <Td
@@ -404,6 +464,7 @@ const PlanRow = memo(
               zIndex={2}
               bg='temaName'
               color='temaNameText'
+              cursor='help'
               p={0}
             >
               <Tooltip label={tema.nom} hasArrow placement='right'>
@@ -446,7 +507,7 @@ const PlanRow = memo(
           maxW={`${FIXED[3].width}px`}
         >
           <Flex align='center' gap={1}>
-            <Text flex={1} noOfLines={2} fontSize='xs' fontWeight={500} title={apartat.titol}>
+            <Text flex={1} noOfLines={2} fontSize='xs' fontWeight={500} title={apartat.titol} cursor='help'>
               {apartat.titol}
             </Text>
             <IconButton
@@ -468,11 +529,25 @@ const PlanRow = memo(
               minW={6}
               h={6}
             />
+            <TemaMapaButton
+              tema={tema}
+              apartat={apartat}
+              variant='icon'
+              size='xs'
+              minW={6}
+              h={6}
+              bg='transparent'
+              color='textMuted'
+              _hover={{ bg: 'surfaceMuted', color: 'accent' }}
+            />
           </Flex>
         </Td>
         {columns.map((column) => {
           if (column.ambit === 'tema' && !isFirst) return null
-          const value = (column.ambit === 'tema' ? temaCells : rowCells)?.[column.col_id]?.v ?? ''
+          const isStudyDate = column.col_id === COL.DATA_CLASSE
+          const value = isStudyDate
+            ? (studyDate ?? '')
+            : ((column.ambit === 'tema' ? temaCells : rowCells)?.[column.col_id]?.v ?? '')
           const targetRow = column.ambit === 'tema' ? temaRow : rowId
           return (
             <td
@@ -486,7 +561,11 @@ const PlanRow = memo(
                 levelInfo={levelInfo}
                 temaLevel={temaLevel}
                 label={`${column.titol} · ${column.ambit === 'tema' ? tema.codi : `${apartat.num} ${apartat.titol}`}`}
-                onSave={(v, manual) => onSave(targetRow, column.col_id, v, manual)}
+                onSave={(v, manual) =>
+                  isStudyDate ? onStudyDate(tema, apartat, v) : onSave(targetRow, column.col_id, v, manual)
+                }
+                reviews={reviews}
+                onToggleReview={onToggleReview}
               />
             </td>
           )
@@ -503,8 +582,12 @@ const PlanRow = memo(
     a.rowCells === b.rowCells &&
     a.temaCells === b.temaCells &&
     a.studyDate === b.studyDate &&
+    sameReviews(a.reviews, b.reviews) &&
     a.onSave === b.onSave &&
+    a.onStudyDate === b.onStudyDate &&
+    a.onToggleReview === b.onToggleReview &&
     a.onRegister === b.onRegister &&
+    a.onRegisterTema === b.onRegisterTema &&
     sameLevel(a.levelInfo, b.levelInfo) &&
     a.temaLevel?.level === b.temaLevel?.level &&
     a.temaLevel?.average === b.temaLevel?.average

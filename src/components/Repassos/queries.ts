@@ -38,7 +38,7 @@ export const useIcsState = () =>
   })
 
 /**
- * Every repassos mutation may also change planificació cells (done marks, repas_seguent, data_classe)
+ * Every repassos mutation may also change planificació cells (done marks, repas_seguent, veure_classe)
  */
 const useRepassosMutation = <P>(
   fn: (params: P) => Promise<CommitResult>,

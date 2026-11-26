@@ -11,8 +11,10 @@ const valueOf = (
   temaId: string,
   temaRow: string,
   cells: Cells,
-  derived: PlanDerived
+  derived: PlanDerived,
+  estudis: Record<string, string>
 ) => {
+  if (column.col_id === COL.DATA_CLASSE) return estudis[rowId] ?? ''
   if (column.tipus === 'auto_nivell_tema') return derived.temaLevels[temaId]?.level ?? '—'
   if (column.col_id === COL.NIVELL_APARTAT) return derived.apartatLevels[rowId]?.level ?? ''
   const cell = cells[column.ambit === 'tema' ? temaRow : rowId]?.[column.col_id]
@@ -24,7 +26,12 @@ const valueOf = (
  * Same format as the original export: every <tr> of the table including the 3 header rows,
  * tema-scope values only on the first row of each tema (rowspan)
  */
-export const buildOriginalCsv = (structure: Structure, cells: Cells, derived: PlanDerived) => {
+export const buildOriginalCsv = (
+  structure: Structure,
+  cells: Cells,
+  derived: PlanDerived,
+  estudis: Record<string, string>
+) => {
   const { columns, temes } = structure
   const rows: string[][] = []
   const groups: string[] = []
@@ -43,7 +50,7 @@ export const buildOriginalCsv = (structure: Structure, cells: Cells, derived: Pl
       const fixed = i === 0 ? [tema.codi, tema.nom, a.num, a.titol] : [a.num, a.titol]
       const values = columns
         .filter((c) => c.ambit === 'apartat' || i === 0)
-        .map((c) => valueOf(c, a.row_id, tema.id, temaRow, cells, derived))
+        .map((c) => valueOf(c, a.row_id, tema.id, temaRow, cells, derived, estudis))
       rows.push([...fixed, ...values])
     })
   }
@@ -53,7 +60,12 @@ export const buildOriginalCsv = (structure: Structure, cells: Cells, derived: Pl
 /**
  * Flat CSV: one row per apartat with every column, tema values repeated
  */
-export const buildFlatCsv = (structure: Structure, cells: Cells, derived: PlanDerived) => {
+export const buildFlatCsv = (
+  structure: Structure,
+  cells: Cells,
+  derived: PlanDerived,
+  estudis: Record<string, string>
+) => {
   const { columns, temes } = structure
   const rows: string[][] = [['tema_id', 'tema', 'nom', 'row_id', 'num', 'apartat', ...columns.map((c) => c.col_id)]]
   for (const tema of temes) {
@@ -66,7 +78,7 @@ export const buildFlatCsv = (structure: Structure, cells: Cells, derived: PlanDe
         a.row_id,
         a.num,
         a.titol,
-        ...columns.map((c) => valueOf(c, a.row_id, tema.id, temaRow, cells, derived)),
+        ...columns.map((c) => valueOf(c, a.row_id, tema.id, temaRow, cells, derived, estudis)),
       ])
     }
   }

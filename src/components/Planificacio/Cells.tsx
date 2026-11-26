@@ -1,7 +1,9 @@
 import { Box, chakra, Tooltip } from '@chakra-ui/react'
 import { KeyboardEvent, memo, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { Instance } from '~components/Repassos/types'
 import { SCORE } from '~utils/constants'
+import { DayString, formatDayMonth, formatShort } from '~utils/dates'
 import { FET } from './columns'
 import { levelColors } from './LevelBadge'
 import { normalizeScore } from './logic'
@@ -31,6 +33,13 @@ export const PLAN_CELL_STYLES = {
     _active: { transform: 'scale(0.94)' },
     _focusVisible: { outline: '2px solid', outlineColor: 'accent', outlineOffset: '1px' },
     '&[aria-pressed=true]': { borderColor: 'na.border', bg: 'na.bg', color: 'na.fg' },
+  },
+  '.pc-review': {
+    color: 'textMuted',
+    fontSize: '10px',
+    fontVariantNumeric: 'tabular-nums',
+    '&[data-status=endarrerit]': { borderColor: 'nb.border', bg: 'nb.bg', color: 'nb.fg' },
+    _disabled: { cursor: 'not-allowed', opacity: 0.45, _hover: { transform: 'none', boxShadow: 'none' } },
   },
   '.pc-input': {
     w: 'full',
@@ -134,6 +143,98 @@ export const DateCell = memo(({ value, onSave, label }: CellControlProps) => (
   />
 ))
 DateCell.displayName = 'DateCell'
+
+// A typed year is complete (the native input reports 0002, 0020… while typing it)
+const isPlausibleDay = (v: string) => /^(19|20)\d\d-\d\d-\d\d$/.test(v)
+
+/**
+ * Class day of an apartat. The first day is saved as soon as it is complete; changing or
+ * clearing an existing one restarts the reviews, so it is saved on blur / Enter (it asks first)
+ */
+export const StudyDateCell = memo(({ value, onSave, label }: CellControlProps) => {
+  const [local, setLocal] = useState(value)
+
+  // Keep the input in sync when the study day changes elsewhere (calendar, register modal)
+  useEffect(() => setLocal(value), [value])
+
+  const commit = (v: string) => {
+    // Show the stored day until the change is confirmed (the prop update brings the new one)
+    setLocal(value)
+    if (v !== value && (!v || isPlausibleDay(v))) onSave(v)
+  }
+
+  return (
+    <input
+      type='date'
+      className='pc-input pc-date'
+      aria-label={label}
+      title={label}
+      value={local}
+      onChange={(e) => {
+        setLocal(e.target.value)
+        if (!value && isPlausibleDay(e.target.value)) onSave(e.target.value)
+      }}
+      onBlur={(e) => commit(e.target.value)}
+      onKeyDown={(e: KeyboardEvent<HTMLInputElement>) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()}
+    />
+  )
+})
+StudyDateCell.displayName = 'StudyDateCell'
+
+type ReviewCellProps = {
+  instance?: Instance
+  label: string
+  onToggle: (instance: Instance, done: boolean) => void
+}
+
+/**
+ * Review of the calendar (d1, setmanal or the current mensual): its day while pending, "✔ FET"
+ * when done. Disabled until the apartat has a class day.
+ */
+export const ReviewCell = memo(
+  ({ instance, label, onToggle }: ReviewCellProps) => {
+    const { t } = useTranslation()
+    const date = instance?.date as DayString
+    const title = !instance
+      ? t('plan.review_no_study', { defaultValue: 'Posa la data de classe per programar aquest repàs' })
+      : instance.isDone
+        ? t('plan.review_done', {
+            defaultValue: 'Repàs fet ({{ date }}). Clica per desmarcar-lo.',
+            date: formatShort(date),
+          })
+        : instance.status === 'endarrerit'
+          ? t('plan.review_overdue', {
+              defaultValue: 'Repàs endarrerit: era per al {{ date }}. Clica per marcar-lo com a fet.',
+              date: formatShort(date),
+            })
+          : t('plan.review_pending', {
+              defaultValue: 'Repàs previst per al {{ date }}. Clica per marcar-lo com a fet.',
+              date: formatShort(date),
+            })
+    return (
+      <button
+        type='button'
+        className='pc-check pc-review'
+        aria-pressed={!!instance?.isDone}
+        aria-label={`${label} · ${title}`}
+        title={title}
+        data-status={instance?.status}
+        disabled={!instance}
+        onClick={() => instance && onToggle(instance, !instance.isDone)}
+      >
+        {!instance ? '·' : instance.isDone ? '✔ FET' : formatDayMonth(date)}
+      </button>
+    )
+  },
+  (a, b) =>
+    a.label === b.label &&
+    a.onToggle === b.onToggle &&
+    a.instance?.id === b.instance?.id &&
+    a.instance?.date === b.instance?.date &&
+    a.instance?.isDone === b.instance?.isDone &&
+    a.instance?.status === b.instance?.status
+)
+ReviewCell.displayName = 'ReviewCell'
 
 const AUTO = 'auto'
 

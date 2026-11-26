@@ -4,7 +4,7 @@ import { derivePlan } from '~components/Planificacio/logic'
 import { useCells, useStructure } from '~components/Planificacio/queries'
 import { indexStructure } from '~components/Planificacio/structure'
 import { Apartat, Cells, Level, PlanDerived, Structure, Tema } from '~components/Planificacio/types'
-import { groupSessions, instancesFromState, loadByDay } from '~components/Repassos/logic'
+import { groupSessions, instancesFromState, loadByDay, reviewsByRow, RowReviews } from '~components/Repassos/logic'
 import { useRepassosState } from '~components/Repassos/queries'
 import { Instance, RepassosState, Session } from '~components/Repassos/types'
 import { DATA_CHANGED_EVENT } from '~utils/constants'
@@ -18,6 +18,8 @@ export interface StudyData {
   repassos: RepassosState
   instances: Instance[]
   sessions: Session[]
+  // Calendar reviews shown in the planificació review columns, by row
+  reviews: Record<string, RowReviews>
   load: Record<DayString, number>
   rowToTema: Record<string, Tema>
   rowIndex: Record<string, number>
@@ -80,9 +82,10 @@ const useStudyDataProvider = (): StudyData | null => {
     [instances, repassos]
   )
   const load = useMemo(() => (instances ? loadByDay(instances) : null), [instances])
+  const reviews = useMemo(() => (instances ? reviewsByRow(instances) : null), [instances])
 
   return useMemo(() => {
-    if (!structure || !cells || !repassos || !derived || !instances || !sessions || !index) return null
+    if (!structure || !cells || !repassos || !derived || !instances || !sessions || !index || !reviews) return null
     return {
       avui,
       structure,
@@ -91,11 +94,12 @@ const useStudyDataProvider = (): StudyData | null => {
       repassos,
       instances,
       sessions,
+      reviews,
       load,
       rowToTema: index.rowToTema,
       rowIndex: index.rowIndex,
       apartatOf: (rowId: string) => index.rowToTema[rowId]?.apartats.find((a) => a.row_id === rowId),
       levelOf: (rowId: string) => derived.apartatLevels[rowId]?.level ?? null,
     }
-  }, [avui, structure, cells, repassos, derived, instances, sessions, load, index])
+  }, [avui, structure, cells, repassos, derived, instances, sessions, reviews, load, index])
 }

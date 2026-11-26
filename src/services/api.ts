@@ -1,5 +1,5 @@
-import { COL } from '~components/Planificacio/columns'
-import { defaultStructure, temaRowId } from '~components/Planificacio/structure'
+import { COL, DEFAULT_COLUMNS, FET } from '~components/Planificacio/columns'
+import { defaultStructure } from '~components/Planificacio/structure'
 import { Cells, SaveCellParams, Structure } from '~components/Planificacio/types'
 import { defaultRepassosState, migrateRepassosState } from '~components/Repassos/config'
 import {
@@ -47,6 +47,8 @@ export const structureSlice = registerSlice<Structure>({
   name: 'structure',
   key: STORAGE_KEYS.STRUCTURE,
   defaults: defaultStructure,
+  // Columns are not editable: always use the current definitions (e.g. data_classe is per apartat now)
+  migrate: (raw) => ({ ...defaultStructure(), ...(raw || {}), columns: DEFAULT_COLUMNS.map((c) => ({ ...c })) }),
 })
 
 export const cellsSlice = registerSlice<Cells>({
@@ -137,7 +139,7 @@ export const plan = {
 export const repassos = {
   getState: async () => readSlice(repassosSlice),
 
-  // Sets the study day of some apartats (restarts their cycle) and fills data_classe if empty
+  // Sets the class (study) day of some apartats, restarts their cycle and ticks "Veure la classe"
   registerStudy: async ({ rowIds, date }: RegisterStudyParams) => {
     const state = readSlice(repassosSlice)
     const rows = new Set(rowIds)
@@ -146,18 +148,9 @@ export const repassos = {
     const overrides = Object.fromEntries(
       Object.entries(state.overrides).filter(([id]) => !rows.has(parseInstanceId(id).rowId))
     )
-
     let cells = readSlice(cellsSlice)
-    const structure = readSlice(structureSlice)
-    for (const tema of structure.temes) {
-      if (!tema.apartats.some((a) => rows.has(a.row_id))) continue
-      const temaRow = temaRowId(tema)
-      if (cells[temaRow]?.[COL.DATA_CLASSE]?.v) continue
-      const dates = tema.apartats
-        .map((a) => estudis[a.row_id])
-        .filter(Boolean)
-        .sort()
-      if (dates.length) cells = withCell(cells, temaRow, COL.DATA_CLASSE, dates[0])
+    for (const r of rowIds) {
+      if (cells[r]?.[COL.VEURE_CLASSE]?.v !== FET) cells = withCell(cells, r, COL.VEURE_CLASSE, FET)
     }
     return commit(cells, { ...state, estudis, overrides })
   },

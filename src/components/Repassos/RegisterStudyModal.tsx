@@ -138,7 +138,7 @@ export const RegisterStudyModal = ({ isOpen, onClose, initial }: RegisterStudyMo
           <ModalBody>
             <Stack spacing={4}>
               <Flex gap={3} direction={{ base: 'column', sm: 'row' }}>
-                <FormControl>
+                <FormControl flex={{ sm: '0 0 168px' }}>
                   <FormLabel fontSize='sm'>{t('repassos.study_date', { defaultValue: 'Data' })}</FormLabel>
                   <Input
                     type='date'
@@ -148,7 +148,7 @@ export const RegisterStudyModal = ({ isOpen, onClose, initial }: RegisterStudyMo
                     borderRadius='md'
                   />
                 </FormControl>
-                <FormControl flex={2}>
+                <FormControl flex={1} minW={0}>
                   <FormLabel fontSize='sm'>{t('repassos.tema', { defaultValue: 'Tema' })}</FormLabel>
                   <Select value={temaId} onChange={(e) => setTemaId(e.target.value)} size='sm' borderRadius='md'>
                     {structure.temes.map((tm) => (

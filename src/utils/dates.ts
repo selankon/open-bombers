@@ -90,6 +90,9 @@ export const formatLong = (d: DayString) => format(parseDay(d), "EEEE d 'de' MMM
 /** `novembre 2026` */
 export const formatMonth = (d: DayString) => format(parseDay(d), 'LLLL yyyy', { locale: ca })
 
+/** `10/11` */
+export const formatDayMonth = (d: DayString) => format(parseDay(d), 'd/M')
+
 /** `10/11/2026` */
 export const formatNumeric = (d: DayString) => format(parseDay(d), 'dd/MM/yyyy')
 

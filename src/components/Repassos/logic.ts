@@ -234,6 +234,30 @@ export const nextPendingByRow = (instances: Instance[]) => {
   return next
 }
 
+// The calendar reviews shown in the planificació columns of one apartat
+export type RowReviews = Partial<Record<TipusRepas, Instance>>
+
+/**
+ * Per apartat: its daily and weekly review, and the current monthly one (the first not done,
+ * or the last one when every monthly review up to the horizon is done)
+ */
+export const reviewsByRow = (instances: Instance[]) => {
+  const result: Record<string, RowReviews> = {}
+  for (const inst of instances) {
+    const row = (result[inst.rowId] ||= {})
+    if (inst.tipus !== 'mensual') {
+      row[inst.tipus] = inst
+      continue
+    }
+    const current = row.mensual
+    if (!current) row.mensual = inst
+    else if (current.isDone) {
+      if (!inst.isDone || inst.n > current.n) row.mensual = inst
+    } else if (!inst.isDone && inst.n < current.n) row.mensual = inst
+  }
+  return result
+}
+
 /** Convenience: all instances from the stored states */
 export const instancesFromState = (state: RepassosState, cells: Cells, avui: DayString) =>
   generarInstancies({

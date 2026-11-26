@@ -5,6 +5,7 @@ import {
   AccordionItem,
   AccordionPanel,
   Box,
+  Button,
   Flex,
   IconButton,
   SimpleGrid,
@@ -16,15 +17,16 @@ import { memo, ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card } from '~components/Layout/LayoutComponents'
 import { TemaMapaButton } from '~components/Mapes/TemaMapaButton'
+import { RowReviews } from '~components/Repassos/logic'
 import { TemaPdfButton } from '~components/Temari/TemaPdfButton'
 import { icons } from '~theme/icons'
 import { formatShort } from '~utils/dates'
 import { PLAN_CELL_STYLES } from './Cells'
 import { ColumnControl } from './ColumnControl'
-import { FET, GROUP_LABELS } from './columns'
+import { COL, FET, GROUP_LABELS, REVIEW_COLUMNS } from './columns'
 import { LevelBadge } from './LevelBadge'
 import { temaRowId } from './structure'
-import { SaveHandler } from './Table'
+import { SaveHandler, StudyDateHandler, ToggleReviewHandler } from './Table'
 import { Apartat, ApartatLevelInfo, Column, ColumnGroup, PlanDerived, RowCells, Tema } from './types'
 
 type MobileListProps = {
@@ -33,14 +35,37 @@ type MobileListProps = {
   cells: Record<string, RowCells>
   derived: PlanDerived
   estudis: Record<string, string>
+  reviews: Record<string, RowReviews>
   onSave: SaveHandler
+  onStudyDate: StudyDateHandler
+  onToggleReview: ToggleReviewHandler
   onRegister: (tema: Tema, apartat: Apartat) => void
+  onRegisterTema: (tema: Tema) => void
+}
+
+/** Done checks of an apartat: stored ticks, with the review columns taken from the calendar */
+const isDoneCheck = (column: Column, rowCells: RowCells | undefined, reviews: RowReviews | undefined) => {
+  const tipus = REVIEW_COLUMNS[column.col_id]
+  return tipus ? !!reviews?.[tipus]?.isDone : rowCells?.[column.col_id]?.v === FET
 }
 
 /**
  * Mobile alternative to the 25-column table: one card per apartat, grouped by tema
  */
-export const PlanMobileList = ({ columns, temes, cells, derived, estudis, onSave, onRegister }: MobileListProps) => {
+export const PlanMobileList = ({
+  columns,
+  temes,
+  cells,
+  derived,
+  estudis,
+  reviews,
+  onSave,
+  onStudyDate,
+  onToggleReview,
+  onRegister,
+  onRegisterTema,
+}: MobileListProps) => {
+  const { t } = useTranslation()
   const temaColumns = columns.filter((c) => c.ambit === 'tema')
   const apartatColumns = columns.filter((c) => c.ambit === 'apartat')
 
@@ -50,7 +75,9 @@ export const PlanMobileList = ({ columns, temes, cells, derived, estudis, onSave
         const temaRow = temaRowId(tema)
         const doneInTema = tema.apartats.reduce(
           (acc, a) =>
-            acc + apartatColumns.filter((c) => c.tipus === 'check' && cells[a.row_id]?.[c.col_id]?.v === FET).length,
+            acc +
+            apartatColumns.filter((c) => c.tipus === 'check' && isDoneCheck(c, cells[a.row_id], reviews[a.row_id]))
+              .length,
           0
         )
         const totalInTema = tema.apartats.length * apartatColumns.filter((c) => c.tipus === 'check').length
@@ -86,7 +113,16 @@ export const PlanMobileList = ({ columns, temes, cells, derived, estudis, onSave
               <AccordionPanel px={3} pb={3} pt={0}>
                 <LazyPanel>
                   <TemaPdfButton tema={tema} variant='button' w='full' mb={2} />
-                  <TemaMapaButton tema={tema} variant='button' w='full' mb={3} />
+                  <TemaMapaButton tema={tema} variant='button' w='full' mb={2} />
+                  <Button
+                    w='full'
+                    mb={3}
+                    variant='outline'
+                    leftIcon={<icons.register />}
+                    onClick={() => onRegisterTema(tema)}
+                  >
+                    {t('plan.register_tema', { defaultValue: 'Posar data de classe a tot el tema' })}
+                  </Button>
                   <MobileFields
                     columns={temaColumns}
                     rowCells={cells[temaRow]}
@@ -110,7 +146,10 @@ export const PlanMobileList = ({ columns, temes, cells, derived, estudis, onSave
                         rowCells={cells[apartat.row_id]}
                         levelInfo={derived.apartatLevels[apartat.row_id]}
                         studyDate={estudis[apartat.row_id]}
+                        reviews={reviews[apartat.row_id]}
                         onSave={onSave}
+                        onStudyDate={onStudyDate}
+                        onToggleReview={onToggleReview}
                         onRegister={onRegister}
                       />
                     ))}
@@ -189,7 +228,10 @@ const MobileApartat = memo(
     rowCells,
     levelInfo,
     studyDate,
+    reviews,
     onSave,
+    onStudyDate,
+    onToggleReview,
     onRegister,
   }: {
     tema: Tema
@@ -198,7 +240,10 @@ const MobileApartat = memo(
     rowCells?: RowCells
     levelInfo: ApartatLevelInfo
     studyDate?: string
+    reviews?: RowReviews
     onSave: SaveHandler
+    onStudyDate: StudyDateHandler
+    onToggleReview: ToggleReviewHandler
     onRegister: (tema: Tema, apartat: Apartat) => void
   }) => {
     const { t } = useTranslation()
@@ -225,19 +270,39 @@ const MobileApartat = memo(
             variant='ghost'
             onClick={() => onRegister(tema, apartat)}
           />
+          <TemaMapaButton
+            tema={tema}
+            apartat={apartat}
+            variant='icon'
+            size='sm'
+            bg='transparent'
+            color='textMuted'
+            _hover={{ bg: 'surfaceMuted', color: 'accent' }}
+          />
         </Flex>
         <MobileFields
           columns={columns}
           rowCells={rowCells}
-          render={(column, value) => (
-            <ColumnControl
-              column={column}
-              value={value}
-              levelInfo={levelInfo}
-              label={`${column.titol} · ${apartat.num} ${apartat.titol}`}
-              onSave={(v, manual) => onSave(apartat.row_id, column.col_id, v, manual)}
-            />
-          )}
+          render={(column, value) =>
+            column.col_id === COL.DATA_CLASSE ? (
+              <ColumnControl
+                column={column}
+                value={studyDate ?? ''}
+                label={`${column.titol} · ${apartat.num} ${apartat.titol}`}
+                onSave={(v) => onStudyDate(tema, apartat, v)}
+              />
+            ) : (
+              <ColumnControl
+                column={column}
+                value={value}
+                levelInfo={levelInfo}
+                label={`${column.titol} · ${apartat.num} ${apartat.titol}`}
+                onSave={(v, manual) => onSave(apartat.row_id, column.col_id, v, manual)}
+                reviews={reviews}
+                onToggleReview={onToggleReview}
+              />
+            )
+          }
         />
       </Box>
     )

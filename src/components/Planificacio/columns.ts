@@ -4,7 +4,8 @@ import { Column, ColumnGroup, ColumnSubgroup, ColumnType } from './types'
  * The 25 data columns of the original "Planificació de Temari", in display order.
  */
 export const DEFAULT_COLUMNS: Column[] = [
-  { col_id: 'data_classe', titol: 'Data classe', grup: 'info', subgrup: 'info', tipus: 'date', ambit: 'tema' },
+  // Its value is the study day of the apartat (repassos.estudis), not a stored cell
+  { col_id: 'data_classe', titol: 'Data classe', grup: 'info', subgrup: 'info', tipus: 'date', ambit: 'apartat' },
   {
     col_id: 'nivell_tema',
     titol: 'Nivell del tema',
@@ -190,6 +191,7 @@ export const COL = {
   DATA_CLASSE: 'data_classe',
   NIVELL_TEMA: 'nivell_tema',
   NIVELL_APARTAT: 'nivell_apartat',
+  VEURE_CLASSE: 'veure_classe',
   REPAS_DIA: 'repas_dia',
   REPAS_SETMANA: 'repas_setmana',
   REPAS_MES: 'repas_mes',
@@ -197,6 +199,13 @@ export const COL = {
 } as const
 
 export const FET = 'FET'
+
+// Review columns whose cells show the calendar instance of the apartat
+export const REVIEW_COLUMNS: Record<string, 'd1' | 'setmanal' | 'mensual'> = {
+  [COL.REPAS_DIA]: 'd1',
+  [COL.REPAS_SETMANA]: 'setmanal',
+  [COL.REPAS_MES]: 'mensual',
+}
 
 // Display labels of the groups (header row 1), kept as in the original
 export const GROUP_LABELS: Record<ColumnGroup, string> = {
