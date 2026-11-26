@@ -91,4 +91,23 @@ export const semanticColors = {
   'mapa.vermell.bg': { default: '#FFF1F2', _dark: 'rgba(225,29,72,0.16)' },
   'mapa.lila': { default: '#7C3AED', _dark: '#A78BFA' },
   'mapa.lila.bg': { default: '#F5F3FF', _dark: 'rgba(124,58,237,0.18)' },
+
+  // PDF reader: the page is paper in both modes, so its ink keeps the light colors
+  'pdf.canvas': { default: '#ECEAE6', _dark: '#0B1120' },
+  'pdf.page': { default: 'white', _dark: 'white' },
+  'pdf.tinta': { default: '#1E293B', _dark: '#1E293B' },
+  'pdf.primari': { default: 'primary.500', _dark: 'primary.500' },
+  'pdf.blau': { default: '#3B82F6', _dark: '#3B82F6' },
+  'pdf.verd': { default: '#10B981', _dark: '#10B981' },
+  'pdf.groc': { default: '#D97706', _dark: '#D97706' },
+  'pdf.vermell': { default: '#E11D48', _dark: '#E11D48' },
+  'pdf.lila': { default: '#7C3AED', _dark: '#7C3AED' },
+  // Highlighter on paper: light marker tints, drawn with mix-blend-mode multiply so the print stays crisp
+  'pdf.marca.tinta': { default: '#CBD5E1', _dark: '#CBD5E1' },
+  'pdf.marca.primari': { default: 'primary.200', _dark: 'primary.200' },
+  'pdf.marca.blau': { default: '#93C5FD', _dark: '#93C5FD' },
+  'pdf.marca.verd': { default: '#86EFAC', _dark: '#86EFAC' },
+  'pdf.marca.groc': { default: '#FDE047', _dark: '#FDE047' },
+  'pdf.marca.vermell': { default: '#FDA4AF', _dark: '#FDA4AF' },
+  'pdf.marca.lila': { default: '#C4B5FD', _dark: '#C4B5FD' },
 }

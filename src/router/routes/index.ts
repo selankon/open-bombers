@@ -6,6 +6,7 @@ export const ROUTES = {
     CALENDAR: '/repassos/calendari',
   },
   TEMARI: '/temari',
+  TEMARI_PDF: '/temari/:id',
   MAPES: {
     LIST: '/mapes',
     EDITOR: '/mapes/:id',
@@ -18,3 +19,6 @@ export const ROUTES = {
 
 // Path of one mind map in the editor
 export const mapaPath = (id: string) => ROUTES.MAPES.EDITOR.replace(':id', encodeURIComponent(id))
+
+// Path of one syllabus PDF in the reader
+export const temariPdfPath = (id: string) => ROUTES.TEMARI_PDF.replace(':id', encodeURIComponent(id))

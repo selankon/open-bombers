@@ -1,26 +1,25 @@
 import { useCallback, useMemo, useReducer } from 'react'
 import { MAPA } from '~utils/constants'
-import { MapaContingut } from '../types'
 
-type Fn = (content: MapaContingut) => MapaContingut
+type Fn<T> = (content: T) => T
 
-interface History {
-  past: MapaContingut[]
-  present: MapaContingut
-  future: MapaContingut[]
+interface History<T> {
+  past: T[]
+  present: T
+  future: T[]
 }
 
-type Action =
-  | { type: 'apply'; fn: Fn }
-  | { type: 'patch'; fn: Fn }
+type Action<T> =
+  | { type: 'apply'; fn: Fn<T> }
+  | { type: 'patch'; fn: Fn<T> }
   | { type: 'checkpoint' }
   | { type: 'undo' }
   | { type: 'redo' }
   | { type: 'drop' }
 
-const push = (past: MapaContingut[], content: MapaContingut) => [...past.slice(-(MAPA.HISTORY_LIMIT - 1)), content]
+const push = <T>(past: T[], content: T) => [...past.slice(-(MAPA.HISTORY_LIMIT - 1)), content]
 
-const reducer = (state: History, action: Action): History => {
+const reducer = <T>(state: History<T>, action: Action<T>): History<T> => {
   switch (action.type) {
     case 'apply': {
       const next = action.fn(state.present)
@@ -54,15 +53,19 @@ const reducer = (state: History, action: Action): History => {
 }
 
 /**
- * Content being edited (ideas, ink, shapes, pictures), with undo / redo.
+ * Content being edited (ideas, ink, shapes, pictures, or the annotations of a PDF), with undo / redo.
  * - `apply`: a change that is one undo step
  * - `checkpoint` + `patch`: a continuous change (dragging) that becomes a single step
  */
-export const useEditorState = (initial: MapaContingut) => {
-  const [state, dispatch] = useReducer(reducer, undefined, () => ({ past: [], present: initial, future: [] }))
+export const useEditorState = <T>(initial: T) => {
+  const [state, dispatch] = useReducer(reducer<T>, undefined, (): History<T> => ({
+    past: [],
+    present: initial,
+    future: [],
+  }))
 
-  const apply = useCallback((fn: Fn) => dispatch({ type: 'apply', fn }), [])
-  const patch = useCallback((fn: Fn) => dispatch({ type: 'patch', fn }), [])
+  const apply = useCallback((fn: Fn<T>) => dispatch({ type: 'apply', fn }), [])
+  const patch = useCallback((fn: Fn<T>) => dispatch({ type: 'patch', fn }), [])
   const checkpoint = useCallback(() => dispatch({ type: 'checkpoint' }), [])
   const undo = useCallback(() => dispatch({ type: 'undo' }), [])
   const redo = useCallback(() => dispatch({ type: 'redo' }), [])

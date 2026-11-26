@@ -73,7 +73,16 @@ export const Choice = ({
   </Button>
 )
 
-export const ColorSwatches = ({ value, onChange }: { value: MapaColor | null; onChange: (c: MapaColor) => void }) => {
+export const ColorSwatches = ({
+  value,
+  onChange,
+  palette = 'mapa',
+}: {
+  value: MapaColor | null
+  onChange: (c: MapaColor) => void
+  // `pdf`: the colors as they look on paper
+  palette?: 'mapa' | 'pdf'
+}) => {
   const names = useColorNames()
   return (
     <Flex gap={2} wrap='wrap'>
@@ -89,14 +98,16 @@ export const ColorSwatches = ({ value, onChange }: { value: MapaColor | null; on
           h={8}
           p={0}
           borderRadius='full'
-          bg={`mapa.${c}`}
-          _hover={{ bg: `mapa.${c}`, opacity: 0.85 }}
-          _active={{ bg: `mapa.${c}` }}
+          bg={`${palette}.${c}`}
+          _hover={{ bg: `${palette}.${c}`, opacity: 0.85 }}
+          _active={{ bg: `${palette}.${c}` }}
           boxShadow={
-            value === c ? `0 0 0 2px var(--chakra-colors-surface), 0 0 0 4px var(--chakra-colors-mapa-${c})` : 'none'
+            value === c
+              ? `0 0 0 2px var(--chakra-colors-surface), 0 0 0 4px var(--chakra-colors-${palette}-${c})`
+              : 'none'
           }
         >
-          {value === c && <Icon as={icons.check} color='surface' boxSize={4} />}
+          {value === c && <Icon as={icons.check} color={palette === 'pdf' ? 'mapa.onSolid' : 'surface'} boxSize={4} />}
         </Button>
       ))}
     </Flex>

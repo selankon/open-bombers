@@ -28,7 +28,7 @@ export const NAV_ITEMS: NavItem[] = [
   },
   {
     path: ROUTES.TEMARI,
-    match: [ROUTES.TEMARI],
+    match: [ROUTES.TEMARI, ROUTES.TEMARI_PDF],
     icon: icons.temari,
     labelKey: 'nav.temari',
     defaultLabel: 'Temari',

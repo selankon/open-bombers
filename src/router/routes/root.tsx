@@ -11,6 +11,7 @@ const RepassosLayout = lazy(() =>
 const RepassosTodayPage = lazy(() => import('~src/pages/repassos/today').then((m) => ({ default: m.Today })))
 const RepassosCalendarPage = lazy(() => import('~src/pages/repassos/calendar').then((m) => ({ default: m.Calendar })))
 const TemariPage = lazy(() => import('~src/pages/temari/view').then((m) => ({ default: m.View })))
+const TemariPdfPage = lazy(() => import('~src/pages/temari/pdf').then((m) => ({ default: m.Pdf })))
 const MapesPage = lazy(() => import('~src/pages/mapes/list').then((m) => ({ default: m.List })))
 const MapaEditorPage = lazy(() => import('~src/pages/mapes/editor').then((m) => ({ default: m.Editor })))
 const SettingsPage = lazy(() => import('~src/pages/settings/view').then((m) => ({ default: m.View })))
@@ -60,6 +61,14 @@ const RootRoutesElements = [
     element: (
       <SuspenseLoader>
         <TemariPage />
+      </SuspenseLoader>
+    ),
+  },
+  {
+    path: ROUTES.TEMARI_PDF,
+    element: (
+      <SuspenseLoader>
+        <TemariPdfPage />
       </SuspenseLoader>
     ),
   },

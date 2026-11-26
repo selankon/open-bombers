@@ -68,7 +68,7 @@ const pwaManifest = (base: string): Partial<VitePWAOptions> => ({
   },
   workbox: {
     // The whole app is local: precache everything so it works 100% offline after the first load
-    globPatterns: ['**/*.{js,css,html,png,svg,ico,json,webmanifest}'],
+    globPatterns: ['**/*.{js,mjs,css,html,png,svg,ico,json,webmanifest}'],
     navigateFallback: 'index.html',
     maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
   },

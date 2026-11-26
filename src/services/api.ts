@@ -28,6 +28,8 @@ import { getSlices, readSlice, registerSlice, removeSlice, writeSlice } from './
 import { db } from './db'
 import { migrateMapa, newId, resumOf } from '~components/Mapes/logic'
 import { MapaInfoParams, MapaMental, NouMapaParams, SaveContentParams } from '~components/Mapes/types'
+import { countPagines, migrateAnotacions } from '~components/Anotacions/logic'
+import { AnotacionsResum, PdfAnotacions, SaveAnotacionsParams } from '~components/Anotacions/types'
 
 /**
  * Local "API". There is no backend: every method reads and writes localStorage through the
@@ -307,6 +309,35 @@ export const mapes = {
   },
 }
 
+const allAnotacions = async () =>
+  (await db.getAll<PdfAnotacions>(IDB_STORES.ANOTACIONS))
+    .map(migrateAnotacions)
+    .filter((a): a is PdfAnotacions => a !== null)
+
+/**
+ * Annotations drawn over the syllabus PDFs (one record per PDF, in IndexedDB).
+ * A PDF without annotations has no record, so `list` tells which PDFs are annotated.
+ */
+export const anotacions = {
+  list: async (): Promise<AnotacionsResum[]> =>
+    (await allAnotacions()).map((a) => ({ id: a.id, modificat: a.modificat, total: countPagines(a.pagines) })),
+  // Annotations of one PDF (empty when it has none)
+  get: async (id: string): Promise<PdfAnotacions> => {
+    const raw = await db.get<PdfAnotacions>(IDB_STORES.ANOTACIONS, id)
+    return migrateAnotacions(raw) ?? { id, modificat: now(), pagines: {} }
+  },
+  save: async ({ id, pagines }: SaveAnotacionsParams): Promise<PdfAnotacions> => {
+    const record: PdfAnotacions = { id, modificat: now(), pagines }
+    if (countPagines(pagines)) await db.put(IDB_STORES.ANOTACIONS, record)
+    else await db.delete(IDB_STORES.ANOTACIONS, id)
+    return record
+  },
+  remove: async (id: string) => {
+    await db.delete(IDB_STORES.ANOTACIONS, id)
+    return id
+  },
+}
+
 // Backup endpoints: every registered slice goes into the file, plus the mind maps
 export const backup = {
   export: async (): Promise<BackupFile> => {
@@ -407,4 +438,5 @@ export default {
   backup,
   temari,
   mapes,
+  anotacions,
 }

@@ -5,15 +5,36 @@ import { formaPaths } from '../geometry'
 import { centerLine, HIGHLIGHTER_OPACITY, strokePath } from '../ink'
 import { ItemRef, MapaForma, MapaImatge, MapaNode, MapaTrace } from '../types'
 
+// Token family of the ink: `mapa` follows the color mode, `pdf` keeps the light colors (ink on paper)
+export type InkPalette = 'mapa' | 'pdf'
+
 type ItemHandlers = {
   // Only with the selection tool
   interactive: boolean
+  palette?: InkPalette
   selected: ItemRef | null
   onItemPointerDown: (ref: ItemRef, e: PointerEvent) => void
 }
 
-const svgStyle = { position: 'absolute', left: 0, top: 0, overflow: 'visible', pointerEvents: 'none' } as const
+// touch-action: dragging a drawing with a finger must not scroll the page under it (PDF reader)
+const svgStyle = {
+  position: 'absolute',
+  left: 0,
+  top: 0,
+  overflow: 'visible',
+  pointerEvents: 'none',
+  touchAction: 'none',
+} as const
 const tokenVar = (token: string) => `var(--chakra-colors-${token.replace(/\./g, '-')})`
+
+// Look of a stroke. On paper (PDF) the highlighter is an opaque marker tint: the reader blends its whole
+// layer with the page (multiply), like a real marker over print.
+const inkStyle = (palette: InkPalette, eina: MapaTrace['eina'], color: MapaTrace['color']) =>
+  eina !== 'subratllador'
+    ? { fill: tokenVar(`${palette}.${color}`), opacity: 1 }
+    : palette === 'pdf'
+      ? { fill: tokenVar(`pdf.marca.${color}`), opacity: 1 }
+      : { fill: tokenVar(`${palette}.${color}`), opacity: HIGHLIGHTER_OPACITY }
 const SELECTED = tokenVar('accent')
 
 const hitProps = (interactive: boolean, onDown: (e: PointerEvent) => void, width: number) =>
@@ -37,6 +58,7 @@ export const TracesLayer = memo(
     interactive,
     selected,
     onItemPointerDown,
+    palette = 'mapa',
   }: { traces: MapaTrace[]; map: Record<string, MapaNode> } & ItemHandlers) => (
     <svg width={1} height={1} style={svgStyle} aria-hidden>
       {traces.map((t) => {
@@ -56,11 +78,7 @@ export const TracesLayer = memo(
                 opacity={0.25}
               />
             )}
-            <path
-              d={strokePath(pts, t.eina, t.gruix, !!t.pressio)}
-              fill={tokenVar(`mapa.${t.color}`)}
-              opacity={t.eina === 'subratllador' ? HIGHLIGHTER_OPACITY : 1}
-            />
+            <path d={strokePath(pts, t.eina, t.gruix, !!t.pressio)} {...inkStyle(palette, t.eina, t.color)} />
             {hit && <path d={centerLine(pts)} {...hit} />}
           </g>
         )
@@ -70,9 +88,17 @@ export const TracesLayer = memo(
 )
 TracesLayer.displayName = 'TracesLayer'
 
-export const FormaShape = ({ f, opacity = 1 }: { f: Omit<MapaForma, 'id'>; opacity?: number }) => {
+export const FormaShape = ({
+  f,
+  opacity = 1,
+  palette = 'mapa',
+}: {
+  f: Omit<MapaForma, 'id'>
+  opacity?: number
+  palette?: InkPalette
+}) => {
   const { d, arrow } = formaPaths(f)
-  const color = tokenVar(`mapa.${f.color}`)
+  const color = tokenVar(`${palette}.${f.color}`)
   return (
     <g opacity={opacity}>
       <path d={d} fill='none' stroke={color} strokeWidth={f.gruix} strokeLinecap='round' strokeLinejoin='round' />
@@ -83,7 +109,7 @@ export const FormaShape = ({ f, opacity = 1 }: { f: Omit<MapaForma, 'id'>; opaci
 
 /** Shapes drawn with the shapes tool */
 export const FormesLayer = memo(
-  ({ formes, interactive, selected, onItemPointerDown }: { formes: MapaForma[] } & ItemHandlers) => (
+  ({ formes, interactive, selected, onItemPointerDown, palette = 'mapa' }: { formes: MapaForma[] } & ItemHandlers) => (
     <svg width={1} height={1} style={svgStyle} aria-hidden>
       {formes.map((f) => {
         const hit = hitProps(interactive, (e) => onItemPointerDown({ kind: 'forma', id: f.id }, e), f.gruix)
@@ -100,7 +126,7 @@ export const FormesLayer = memo(
                 opacity={0.25}
               />
             )}
-            <FormaShape f={f} />
+            <FormaShape f={f} palette={palette} />
             {hit && <path d={formaPaths(f).d} {...hit} />}
           </g>
         )
@@ -193,18 +219,17 @@ export type Draft =
   | { kind: 'forma'; forma: Omit<MapaForma, 'id'> }
   | { kind: 'goma'; x: number; y: number; r: number }
 
-export const DraftLayer = ({ draft }: { draft: Draft | null }) => {
+export const DraftLayer = ({ draft, palette = 'mapa' }: { draft: Draft | null; palette?: InkPalette }) => {
   if (!draft) return null
   return (
     <svg width={1} height={1} style={svgStyle} aria-hidden>
       {draft.kind === 'trace' && (
         <path
           d={strokePath(draft.punts, draft.eina, draft.gruix, draft.pressio, false)}
-          fill={tokenVar(`mapa.${draft.color}`)}
-          opacity={draft.eina === 'subratllador' ? HIGHLIGHTER_OPACITY : 1}
+          {...inkStyle(palette, draft.eina, draft.color)}
         />
       )}
-      {draft.kind === 'forma' && <FormaShape f={draft.forma} opacity={0.8} />}
+      {draft.kind === 'forma' && <FormaShape f={draft.forma} opacity={0.8} palette={palette} />}
       {draft.kind === 'goma' && (
         <circle
           cx={draft.x}

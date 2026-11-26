@@ -145,7 +145,7 @@ const PdfRow = ({ num, nom, pdf }: { num: number | null; nom: string; pdf: Temar
             />
           </Tooltip>
           <Button
-            leftIcon={<Icon as={icons.external} />}
+            leftIcon={<Icon as={icons.study} />}
             onClick={() => open(pdf)}
             isDisabled={unavailable}
             display={{ base: 'none', sm: 'inline-flex' }}
@@ -154,7 +154,7 @@ const PdfRow = ({ num, nom, pdf }: { num: number | null; nom: string; pdf: Temar
           </Button>
           <IconButton
             aria-label={t('temari.open_aria', { defaultValue: 'Obre el PDF' })}
-            icon={<Icon as={icons.external} boxSize={5} />}
+            icon={<Icon as={icons.study} boxSize={5} />}
             onClick={() => open(pdf)}
             isDisabled={unavailable}
             display={{ base: 'inline-flex', sm: 'none' }}

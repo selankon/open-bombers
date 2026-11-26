@@ -1,4 +1,8 @@
 import {
+  PiArrowsOutLineHorizontal,
+  PiNote,
+  PiNotePencil,
+  PiTextUnderline,
   PiArrowUpRight,
   PiCircle,
   PiCursor,
@@ -140,4 +144,8 @@ export const icons = {
   lineText: PiTextT,
   exportImage: PiFileImage,
   export: PiExport,
+  note: PiNote,
+  annotated: PiNotePencil,
+  underline: PiTextUnderline,
+  fitWidth: PiArrowsOutLineHorizontal,
 }

@@ -9,6 +9,11 @@ import { ItemRef, MapaColor, MapaContingut, MapaForma, MapaNode, MapaTrace, Node
 
 type Fn<T> = (v: T) => T
 
+/**
+ * Any content with drawings: a mind map, or one page of an annotated PDF (which has no ideas)
+ */
+export type Dibuix = Pick<MapaContingut, 'traces' | 'formes' | 'imatges'> & { nodes?: MapaNode[] }
+
 export const onNodes =
   (fn: Fn<MapaNode[]>): Fn<MapaContingut> =>
   (c) => {
@@ -121,10 +126,10 @@ export const makeTrace = (
 
 const listOf = (kind: ItemRef['kind']) => (({ trace: 'traces', forma: 'formes', imatge: 'imatges' }) as const)[kind]
 
-export const findItem = (c: MapaContingut, ref: ItemRef) =>
+export const findItem = (c: Dibuix, ref: ItemRef) =>
   (c[listOf(ref.kind)] as { id: string }[]).find((i) => i.id === ref.id)
 
-export const removeItem = (c: MapaContingut, ref: ItemRef): MapaContingut => {
+export const removeItem = <C extends Dibuix>(c: C, ref: ItemRef): C => {
   const key = listOf(ref.kind)
   return { ...c, [key]: (c[key] as { id: string }[]).filter((i) => i.id !== ref.id) }
 }
@@ -132,7 +137,7 @@ export const removeItem = (c: MapaContingut, ref: ItemRef): MapaContingut => {
 const updateIn = <T extends { id: string }>(items: T[], id: string, fn: (i: T) => T) =>
   items.map((i) => (i.id === id ? fn(i) : i))
 
-export const moveItem = (c: MapaContingut, ref: ItemRef, dx: number, dy: number): MapaContingut => {
+export const moveItem = <C extends Dibuix>(c: C, ref: ItemRef, dx: number, dy: number): C => {
   if (ref.kind === 'trace')
     return {
       ...c,
@@ -147,17 +152,13 @@ export const moveItem = (c: MapaContingut, ref: ItemRef, dx: number, dy: number)
 }
 
 /** New color and / or width of a stroke or shape */
-export const restyleItem = (
-  c: MapaContingut,
-  ref: ItemRef,
-  patch: { color?: MapaColor; gruix?: number }
-): MapaContingut => {
+export const restyleItem = <C extends Dibuix>(c: C, ref: ItemRef, patch: { color?: MapaColor; gruix?: number }): C => {
   if (ref.kind === 'trace') return { ...c, traces: updateIn(c.traces, ref.id, (t) => ({ ...t, ...patch })) }
   if (ref.kind === 'forma') return { ...c, formes: updateIn(c.formes, ref.id, (f) => ({ ...f, ...patch })) }
   return c
 }
 
-export const resizeImatge = (c: MapaContingut, id: string, w: number, h: number): MapaContingut => ({
+export const resizeImatge = <C extends Dibuix>(c: C, id: string, w: number, h: number): C => ({
   ...c,
   imatges: updateIn(c.imatges, id, (i) => ({ ...i, w, h })),
 })
@@ -202,8 +203,8 @@ const hitsForma = (f: MapaForma, x: number, y: number, r: number) => {
 }
 
 /** Removes the strokes and shapes touched by the eraser at (x, y) */
-export const eraseAt = (c: MapaContingut, x: number, y: number, r: number): MapaContingut => {
-  const map = Object.fromEntries(c.nodes.map((n) => [n.id, n]))
+export const eraseAt = <C extends Dibuix>(c: C, x: number, y: number, r: number): C => {
+  const map = Object.fromEntries((c.nodes ?? []).map((n) => [n.id, n]))
   const traces = c.traces.filter((t) => !hitsTrace(t, map, x, y, r))
   const formes = c.formes.filter((f) => !hitsForma(f, x, y, r))
   if (traces.length === c.traces.length && formes.length === c.formes.length) return c

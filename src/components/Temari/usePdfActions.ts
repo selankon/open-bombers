@@ -1,24 +1,24 @@
 import { useToast } from '@chakra-ui/react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useNavigate } from 'react-router-dom'
+import { temariPdfPath } from '~src/router/routes'
 import api from '~src/services/api'
 import { TEMARI_DOWNLOAD_DELAY } from '~utils/constants'
 import { downloadBlob } from '~utils/download'
-import { pdfFileName, pdfUrl } from './logic'
+import { pdfFileName } from './logic'
 import { useSavedPdfs } from './queries'
 import { TemariPdf } from './types'
-
-// Blob URLs stay alive a while so the new tab can finish loading the PDF
-const BLOB_URL_TTL = 5 * 60 * 1000
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
 /**
- * Open and download syllabus PDFs, using the offline copy when there is one
+ * Open (in the reader) and download syllabus PDFs, using the offline copy when there is one
  */
 export const usePdfActions = () => {
   const { t } = useTranslation()
   const toast = useToast()
+  const navigate = useNavigate()
   const { data: saved = [] } = useSavedPdfs()
   const [busyId, setBusyId] = useState<string | null>(null)
 
@@ -40,31 +40,10 @@ export const usePdfActions = () => {
       isClosable: true,
     })
 
-  const open = async (pdf: TemariPdf) => {
-    if (!isSaved(pdf)) {
-      if (!navigator.onLine) return errorToast()
-      // Not saved: let the browser open the official URL
-      window.open(pdfUrl(pdf), '_blank', 'noopener')
-      return
-    }
-    // Open the tab now, while we still have the user gesture, and point it to the PDF once it's read
-    const win = window.open('', '_blank')
-    setBusyId(pdf.id)
-    try {
-      const blob = await api.temari.getBlob(pdf.id)
-      if (win) {
-        const url = URL.createObjectURL(blob)
-        win.location.href = url
-        setTimeout(() => URL.revokeObjectURL(url), BLOB_URL_TTL)
-      } else {
-        downloadBlob(blob, pdfFileName(pdf))
-      }
-    } catch {
-      win?.close()
-      errorToast()
-    } finally {
-      setBusyId(null)
-    }
+  // Opens the PDF in the app's reader (where it can be annotated)
+  const open = (pdf: TemariPdf) => {
+    if (!isSaved(pdf) && !navigator.onLine) return errorToast()
+    navigate(temariPdfPath(pdf.id))
   }
 
   const download = async (pdf: TemariPdf) => {

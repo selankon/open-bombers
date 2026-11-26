@@ -523,7 +523,7 @@ export const Canvas = forwardRef<CanvasHandle, CanvasProps>((props, ref) => {
 Canvas.displayName = 'Canvas'
 
 /** Shift while drawing: squares / circles, and lines at multiples of 45° */
-const constrain = (tipus: FormaTipus, from: Pt, to: Pt): Pt => {
+export const constrain = (tipus: FormaTipus, from: Pt, to: Pt): Pt => {
   const dx = to.x - from.x
   const dy = to.y - from.y
   if (tipus === 'rect' || tipus === 'elipse') {

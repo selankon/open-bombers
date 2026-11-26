@@ -12,7 +12,7 @@ export const BOTTOM_NAV_HEIGHT = 60
 const MotionLink = motion(RouterLink)
 
 // Screens that use the whole height (the mind map editor has its own bottom toolbar)
-const FULLSCREEN_ROUTES = [ROUTES.MAPES.EDITOR]
+const FULLSCREEN_ROUTES = [ROUTES.MAPES.EDITOR, ROUTES.TEMARI_PDF]
 
 export const useHidesBottomNav = () => {
   const location = useLocation()

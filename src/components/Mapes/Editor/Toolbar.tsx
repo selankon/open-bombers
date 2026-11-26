@@ -46,7 +46,15 @@ export const ToolButton = ({
 
 const Divider = () => <Box w='1px' h={6} bg='border' mx={1} flexShrink={0} />
 
-const PopoverPanel = ({ trigger, children, w = 'auto' }: { trigger: ReactNode; children: ReactNode; w?: string }) => (
+export const PopoverPanel = ({
+  trigger,
+  children,
+  w = 'auto',
+}: {
+  trigger: ReactNode
+  children: ReactNode
+  w?: string
+}) => (
   <Popover placement='top' isLazy>
     <PopoverTrigger>
       <Box display='inline-flex'>{trigger}</Box>
@@ -153,7 +161,9 @@ export const BrushPanel = ({
   widths,
   onColor,
   onGruix,
+  palette = 'mapa',
 }: {
+  palette?: 'mapa' | 'pdf'
   color: MapaColor | null
   gruix: number | null
   widths: readonly number[]
@@ -169,7 +179,7 @@ export const BrushPanel = ({
   return (
     <Stack spacing={4}>
       <Section title={t('mapes.brush.color', { defaultValue: 'Color' })}>
-        <ColorSwatches value={color} onChange={onColor} />
+        <ColorSwatches value={color} onChange={onColor} palette={palette} />
       </Section>
       <Section title={t('mapes.brush.width', { defaultValue: 'Gruix' })}>
         <SimpleGrid columns={3} spacing={2}>

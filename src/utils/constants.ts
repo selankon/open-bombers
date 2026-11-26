@@ -54,10 +54,10 @@ export const TEMARI_CACHE_NAME = `${APP_SLUG}_temari_v1`
 // Pause between files on "download all", so browsers don't drop downloads
 export const TEMARI_DOWNLOAD_DELAY = 400
 
-// IndexedDB database for the data too big for localStorage (mind maps)
+// IndexedDB database for the data too big for localStorage (mind maps, PDF annotations)
 export const IDB_NAME = `${APP_SLUG}_db`
-export const IDB_VERSION = 1
-export const IDB_STORES = { MAPES: 'mapes' } as const
+export const IDB_VERSION = 2
+export const IDB_STORES = { MAPES: 'mapes', ANOTACIONS: 'anotacions' } as const
 
 // BroadcastChannel used to tell other tabs that IndexedDB data changed
 export const IDB_CHANNEL = `${APP_SLUG}:idb`
@@ -109,3 +109,35 @@ export const MAPA = {
 
 export const MAPA_PNG_EXT = '.png'
 export const MAPA_PDF_EXT = '.pdf'
+
+// PDF reader with annotations
+export const PDF = {
+  // Zoom limits (1 = page fits the width of the screen)
+  ZOOM_MIN: 0.5,
+  ZOOM_MAX: 4,
+  ZOOM_STEP: 1.25,
+  // Widest a page gets at zoom 1 (px), and the space around pages
+  FIT_MAX_W: 960,
+  GUTTER: 16,
+  PAGE_GAP: 16,
+  // Pages closer than this to the screen (in screen heights) are rendered
+  RENDER_MARGIN: 1,
+  // Wait after a zoom before re-rendering the pages sharper (ms)
+  RERENDER_DELAY: 180,
+  // Most pixels of one page canvas (iOS refuses bigger canvases)
+  MAX_CANVAS_PX: 16_000_000,
+  // Autosave debounce (ms)
+  SAVE_DELAY: 600,
+  // Stroke widths for each tool (PDF points)
+  GRUIX: {
+    ploma: [1.5, 2.5, 4],
+    subratllador: [8, 12, 18],
+    forma: [1.5, 2.5, 4],
+  },
+  // Eraser reach (screen px)
+  ERASER_RADIUS: 10,
+  // Pasted pictures: widest share of the page they take when placed
+  IMAGE_PAGE_SHARE: 0.6,
+  // Size of a note pin (screen px)
+  NOTE_PIN: 28,
+}
