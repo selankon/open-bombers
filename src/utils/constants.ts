@@ -142,4 +142,17 @@ export const PDF = {
   IMAGE_PAGE_SHARE: 0.6,
   // Size of a note pin (screen px)
   NOTE_PIN: 28,
+  // Export: side of a sticky note icon (PDF points) and the author shown on the comments
+  EXPORT_NOTE_SIZE: 20,
+  EXPORT_AUTHOR: 'Open Bombers',
+  // Export: underline thickness (share of the line height, never thinner than the minimum, in PDF points)
+  EXPORT_UNDERLINE: 0.08,
+  EXPORT_UNDERLINE_MIN: 0.75,
+  // Export: quality of opaque pictures re-encoded as JPEG (WebP can't go into a PDF)
+  EXPORT_JPEG_QUALITY: 0.9,
+  // Export: corner radius of pictures (PDF points, same as the reader)
+  EXPORT_IMAGE_RADIUS: 10,
 }
+
+// Suffix of an exported PDF with its annotations ("tema-9.pdf" → "tema-9-anotat.pdf")
+export const PDF_ANOTAT_SUFFIX = '-anotat.pdf'
