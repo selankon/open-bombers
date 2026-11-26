@@ -123,9 +123,9 @@ export const BackupPanel = () => {
       <Box>
         <SubTitle>{t('backup.export_title', { defaultValue: 'Exportar' })}</SubTitle>
         <Text fontSize='sm' color='textMuted' mb={3}>
-          {t('backup.export_desc', {
+          {t('backup.export_desc_all', {
             defaultValue:
-              'Totes les teves dades es guarden només en aquest dispositiu. Fes-ne còpies per no perdre-les o per passar-les a un altre dispositiu.',
+              'Totes les teves dades es guarden només en aquest dispositiu: la planificació, el calendari de repassos, els mapes mentals i les anotacions dels PDF. Fes-ne còpies per no perdre-les o per passar-les a un altre dispositiu.',
           })}
         </Text>
         <Flex gap={2} wrap='wrap'>
@@ -159,9 +159,9 @@ export const BackupPanel = () => {
                   : t('backup.copy', { defaultValue: 'Copiar el codi' })}
               </Button>
               <Text fontSize='xs' color='textMuted'>
-                {t('backup.code_hint', {
+                {t('backup.code_hint_no_annotations', {
                   defaultValue:
-                    '{{ size }} caràcters. Enganxa’l a «Importar» a l’altre dispositiu (per correu, missatge…).',
+                    '{{ size }} caràcters. Enganxa’l a «Importar» a l’altre dispositiu (per correu, missatge…). No inclou les anotacions dels PDF, que poden ocupar molt: per passar-les, fes servir el fitxer .json.',
                   size: code.length.toLocaleString('ca'),
                 })}
               </Text>
@@ -219,8 +219,9 @@ export const BackupPanel = () => {
       <Box borderWidth='1px' borderColor='nb.border' borderRadius='14px' p={4}>
         <SubTitle>{t('backup.danger_title', { defaultValue: 'Esborrar dades' })}</SubTitle>
         <Text fontSize='sm' color='textMuted' mb={3}>
-          {t('backup.danger_desc', {
-            defaultValue: "Esborra tota la planificació i el calendari d'aquest dispositiu. Fes abans una còpia.",
+          {t('backup.danger_desc_all', {
+            defaultValue:
+              "Esborra la planificació, el calendari, els mapes mentals i les anotacions dels PDF d'aquest dispositiu. Fes abans una còpia.",
           })}
         </Text>
         <Button colorScheme='red' variant='outline' leftIcon={<icons.delete />} onClick={() => setIsResetOpen(true)}>
@@ -232,11 +233,22 @@ export const BackupPanel = () => {
         isOpen={!!pendingImport}
         onClose={() => setPendingImport(null)}
         title={t('backup.confirm_import_title', { defaultValue: 'Substituir les dades?' })}
-        body={t('backup.confirm_import_body', {
-          defaultValue:
-            'Les dades actuals d’aquest dispositiu se substituiran per les de la còpia del {{ date }}. Aquesta acció no es pot desfer.',
-          date: pendingImport?.exported_at ? new Date(pendingImport.exported_at).toLocaleString('ca') : '—',
-        })}
+        body={
+          <>
+            {t('backup.confirm_import_body', {
+              defaultValue:
+                'Les dades actuals d’aquest dispositiu se substituiran per les de la còpia del {{ date }}. Aquesta acció no es pot desfer.',
+              date: pendingImport?.exported_at ? new Date(pendingImport.exported_at).toLocaleString('ca') : '—',
+            })}
+            {pendingImport && !Array.isArray(pendingImport.anotacions) && (
+              <Text as='span' display='block' mt={2}>
+                {t('backup.import_keeps_annotations', {
+                  defaultValue: 'Aquesta còpia no porta anotacions dels PDF: les d’aquest dispositiu es mantenen.',
+                })}
+              </Text>
+            )}
+          </>
+        }
         confirmLabel={t('backup.confirm_import', { defaultValue: 'Importar' })}
         onConfirm={confirmImport}
         isLoading={isImporting}
@@ -246,8 +258,9 @@ export const BackupPanel = () => {
         isOpen={isResetOpen}
         onClose={() => setIsResetOpen(false)}
         title={t('backup.confirm_reset_title', { defaultValue: 'Esborrar totes les dades?' })}
-        body={t('backup.confirm_reset_body', {
-          defaultValue: 'Es perdrà tot el progrés guardat en aquest dispositiu. Aquesta acció no es pot desfer.',
+        body={t('backup.confirm_reset_body_all', {
+          defaultValue:
+            'Es perdrà tot el progrés guardat en aquest dispositiu, també els mapes mentals i les anotacions dels PDF. Els PDF desats per llegir sense connexió es mantenen. Aquesta acció no es pot desfer.',
         })}
         confirmLabel={t('backup.reset', { defaultValue: 'Esborrar totes les dades' })}
         onConfirm={confirmReset}

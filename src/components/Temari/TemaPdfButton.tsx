@@ -1,5 +1,6 @@
 import { Button, ButtonProps, Icon, IconButton, IconButtonProps, Tooltip } from '@chakra-ui/react'
 import { useTranslation } from 'react-i18next'
+import { useAnotacionsList } from '~components/Anotacions/queries'
 import { Tema } from '~components/Planificacio/types'
 import { icons } from '~theme/icons'
 import { pdfForTema } from './logic'
@@ -12,12 +13,15 @@ type TemaPdfButtonProps = { tema: Pick<Tema, 'codi'> } & (
 
 /**
  * Opens the official manual of a tema. Renders nothing for temes without a PDF.
+ * Shows the "annotated" icon when the manual has annotations.
  */
 export const TemaPdfButton = ({ tema, variant, ...props }: TemaPdfButtonProps) => {
   const { t } = useTranslation()
   const { open, isSaved, busyId } = usePdfActions()
+  const { data: anotats } = useAnotacionsList()
   const pdf = pdfForTema(tema)
   if (!pdf) return null
+  const annotated = !!anotats?.some((a) => a.id === pdf.id && a.total > 0)
 
   const label = t('temari.open_manual', { defaultValue: 'Obre el manual ({{manual}})', manual: pdf.manual })
   const common = { onClick: () => open(pdf), isLoading: busyId === pdf.id }
@@ -27,7 +31,7 @@ export const TemaPdfButton = ({ tema, variant, ...props }: TemaPdfButtonProps) =
       <Button
         variant='outline'
         colorScheme='gray'
-        leftIcon={<Icon as={isSaved(pdf) ? icons.saved : icons.pdf} />}
+        leftIcon={<Icon as={annotated ? icons.annotated : isSaved(pdf) ? icons.saved : icons.pdf} />}
         {...common}
         {...(props as ButtonProps)}
       >
@@ -37,7 +41,12 @@ export const TemaPdfButton = ({ tema, variant, ...props }: TemaPdfButtonProps) =
   }
   return (
     <Tooltip label={label} hasArrow placement='right'>
-      <IconButton aria-label={label} icon={<Icon as={icons.pdf} />} {...common} {...(props as IconButtonProps)} />
+      <IconButton
+        aria-label={label}
+        icon={<Icon as={annotated ? icons.annotated : icons.pdf} />}
+        {...common}
+        {...(props as IconButtonProps)}
+      />
     </Tooltip>
   )
 }

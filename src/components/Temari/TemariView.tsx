@@ -2,8 +2,10 @@ import { Badge, Box, Button, Flex, Heading, Icon, IconButton, Stack, Text, Toolt
 import { motion, useReducedMotion } from 'framer-motion'
 import { ReactNode, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useAnotacionsList } from '~components/Anotacions/queries'
 import { useStudyData } from '~components/Layout/Contexts/StudyDataContext'
 import { ConfirmDialog } from '~components/Layout/ConfirmDialog'
+import { ElementNotFound } from '~components/Layout/ElementNotFound'
 import { Card, MainContainer, PageHeader } from '~components/Layout/LayoutComponents'
 import { useOnline } from '~components/Layout/useOnline'
 import { ProgressBar } from '~components/Planificacio/Metrics'
@@ -11,6 +13,7 @@ import { ALL_TEMARI_PDFS, TEMARI_CORRECCIONS, TEMARI_PDFS } from '~src/data/tema
 import { icons } from '~theme/icons'
 import { spring, STAGGER_MAX, STAGGER_STEP } from '~theme/motion'
 import { formatRanges, pdfForTema, temaNumber } from './logic'
+import { PdfAnotacionsMenu } from './PdfAnotacionsMenu'
 import { useRemovePdfs, useSavePdfs, useSavedPdfs } from './queries'
 import { TemariPdf } from './types'
 import { usePdfActions } from './usePdfActions'
@@ -33,10 +36,19 @@ const FadeIn = ({ index, children }: { index: number; children: ReactNode }) => 
   )
 }
 
+type PdfRowProps = {
+  num: number | null
+  nom: string
+  pdf: TemariPdf
+  // Number of annotations of the PDF (0 when it has none)
+  anotacions: number
+}
+
 /**
- * One document: open it, save it as a file, keep it offline
+ * One document: open it, save it as a file, keep it offline. Annotated PDFs get a "…" menu instead
+ * of the download button (download, export with the annotations, delete them).
  */
-const PdfRow = ({ num, nom, pdf }: { num: number | null; nom: string; pdf: TemariPdf }) => {
+const PdfRow = ({ num, nom, pdf, anotacions }: PdfRowProps) => {
   const { t } = useTranslation()
   const toast = useToast()
   const isOnline = useOnline()
@@ -119,6 +131,18 @@ const PdfRow = ({ num, nom, pdf }: { num: number | null; nom: string; pdf: Temar
                 <Text>{t('temari.saved_badge', { defaultValue: 'Al dispositiu' })}</Text>
               </Flex>
             )}
+            {anotacions > 0 && (
+              <Flex align='center' gap={1} fontSize='xs' color='accent'>
+                <Icon as={icons.annotated} />
+                <Text sx={{ fontVariantNumeric: 'tabular-nums' }}>
+                  {t('temari.annotated_badge', {
+                    defaultValue: '{{count}} anotacions',
+                    defaultValue_one: '{{count}} anotació',
+                    count: anotacions,
+                  })}
+                </Text>
+              </Flex>
+            )}
           </Flex>
         </Box>
         <Flex gap={1} flexShrink={0}>
@@ -133,17 +157,27 @@ const PdfRow = ({ num, nom, pdf }: { num: number | null; nom: string; pdf: Temar
               isDisabled={!saved && !isOnline}
             />
           </Tooltip>
-          <Tooltip label={t('temari.download', { defaultValue: 'Descarrega el fitxer' })} hasArrow>
-            <IconButton
-              aria-label={t('temari.download', { defaultValue: 'Descarrega el fitxer' })}
-              icon={<Icon as={icons.download} boxSize={5} />}
-              variant='ghost'
-              colorScheme='gray'
-              onClick={() => download(pdf)}
-              isLoading={busyId === pdf.id}
-              isDisabled={unavailable}
+          {anotacions > 0 ? (
+            <PdfAnotacionsMenu
+              pdf={pdf}
+              nom={nom}
+              onDownload={() => download(pdf)}
+              isDownloading={busyId === pdf.id}
+              unavailable={unavailable}
             />
-          </Tooltip>
+          ) : (
+            <Tooltip label={t('temari.download', { defaultValue: 'Descarrega el fitxer' })} hasArrow>
+              <IconButton
+                aria-label={t('temari.download', { defaultValue: 'Descarrega el fitxer' })}
+                icon={<Icon as={icons.download} boxSize={5} />}
+                variant='ghost'
+                colorScheme='gray'
+                onClick={() => download(pdf)}
+                isLoading={busyId === pdf.id}
+                isDisabled={unavailable}
+              />
+            </Tooltip>
+          )}
           <Button
             leftIcon={<Icon as={icons.study} />}
             onClick={() => open(pdf)}
@@ -174,11 +208,20 @@ export const TemariView = () => {
   const isOnline = useOnline()
   const { structure } = useStudyData()
   const { data: saved = [] } = useSavedPdfs()
+  const { data: anotats = [] } = useAnotacionsList()
   const { downloadAll } = usePdfActions()
   const { mutateAsync: save } = useSavePdfs()
   const { mutateAsync: remove, isPending: isRemoving } = useRemovePdfs()
   const [batch, setBatch] = useState<Batch | null>(null)
   const [isRemoveOpen, setIsRemoveOpen] = useState(false)
+  const [onlyAnnotated, setOnlyAnnotated] = useState(false)
+
+  // Number of annotations of every annotated PDF
+  const anotacionsById = useMemo(() => new Map(anotats.map((a) => [a.id, a.total])), [anotats])
+  const countOf = (pdf: TemariPdf) => anotacionsById.get(pdf.id) ?? 0
+  // The filter only exists while some PDF is annotated
+  const hasAnnotated = anotats.some((a) => a.total > 0)
+  const filtering = onlyAnnotated && hasAnnotated
 
   // Temes of the planning (names can be edited by the user) + manuals whose tema isn't there
   const rows = useMemo<Row[]>(() => {
@@ -198,6 +241,7 @@ export const TemariView = () => {
     return [...fromStructure, ...orphans].sort((a, b) => (a.num ?? 0) - (b.num ?? 0))
   }, [structure.temes, t])
   const withPdf = rows.filter((r): r is Required<Row> => !!r.pdf)
+  const visible = filtering ? withPdf.filter((r) => countOf(r.pdf) > 0) : withPdf
   // Temes without a manual (legal texts), listed by number in a single note
   const withoutPdf = rows
     .filter((r) => !r.pdf)
@@ -364,14 +408,28 @@ export const TemariView = () => {
             num={null}
             nom={t('temari.correccions', { defaultValue: 'Correccions de la guia orientativa de continguts' })}
             pdf={TEMARI_CORRECCIONS}
+            anotacions={countOf(TEMARI_CORRECCIONS)}
           />
         </Box>
 
         <Box>
-          <Heading size='sm' mb={3}>
-            {t('temari.by_tema', { defaultValue: 'Per tema' })}
-          </Heading>
-          {withoutPdf.length > 0 && (
+          <Flex align='center' justify='space-between' gap={3} mb={3} minH={8}>
+            <Heading size='sm'>{t('temari.by_tema', { defaultValue: 'Per tema' })}</Heading>
+            {hasAnnotated && (
+              <Button
+                size='sm'
+                leftIcon={<Icon as={icons.annotated} />}
+                variant={filtering ? 'solid' : 'outline'}
+                colorScheme={filtering ? 'primary' : 'gray'}
+                borderRadius='full'
+                aria-pressed={filtering}
+                onClick={() => setOnlyAnnotated((v) => !v)}
+              >
+                {t('temari.only_annotated', { defaultValue: 'Només anotats' })}
+              </Button>
+            )}
+          </Flex>
+          {withoutPdf.length > 0 && !filtering && (
             <Flex align='flex-start' gap={2} fontSize='sm' color='textMuted' mb={3}>
               <Icon as={icons.info} mt={0.5} flexShrink={0} />
               <Text>
@@ -382,13 +440,31 @@ export const TemariView = () => {
               </Text>
             </Flex>
           )}
-          <Stack spacing={2}>
-            {withPdf.map(({ key, ...row }, i) => (
-              <FadeIn key={key} index={i}>
-                <PdfRow {...row} />
-              </FadeIn>
-            ))}
-          </Stack>
+          {visible.length ? (
+            <Stack spacing={2}>
+              {visible.map(({ key, ...row }, i) => (
+                <FadeIn key={key} index={i}>
+                  <PdfRow {...row} anotacions={countOf(row.pdf)} />
+                </FadeIn>
+              ))}
+            </Stack>
+          ) : (
+            <Card>
+              <ElementNotFound
+                icon={icons.annotated}
+                title={t('temari.empty_annotated_title', { defaultValue: 'Cap tema amb anotacions' })}
+                desc={t('temari.empty_annotated_desc', {
+                  defaultValue:
+                    'Aquí veuràs els manuals dels temes on hagis dibuixat, subratllat o afegit notes. Obre’n un i fes-hi la primera anotació.',
+                })}
+                action={
+                  <Button variant='outline' colorScheme='gray' onClick={() => setOnlyAnnotated(false)}>
+                    {t('temari.show_all', { defaultValue: 'Mostra tots els temes' })}
+                  </Button>
+                }
+              />
+            </Card>
+          )}
         </Box>
       </Stack>
 
@@ -399,9 +475,9 @@ export const TemariView = () => {
         isLoading={isRemoving}
         isDestructive
         title={t('temari.remove_all_title', { defaultValue: 'Esborrar les còpies del temari?' })}
-        body={t('temari.remove_all_body', {
+        body={t('temari.remove_all_body_annotations', {
           defaultValue:
-            'S’esborraran els PDF desats en aquest dispositiu i alliberaràs espai. El teu progrés no es toca, i pots tornar a desar-los quan vulguis amb connexió.',
+            'S’esborraran els PDF desats en aquest dispositiu i alliberaràs espai. El teu progrés i les teves anotacions no es toquen, però per obrir un PDF anotat necessitaràs connexió fins que el tornis a desar. Pots tornar a desar-los quan vulguis amb connexió.',
         })}
         confirmLabel={t('temari.remove_all_confirm', { defaultValue: 'Esborra les còpies' })}
       />

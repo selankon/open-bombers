@@ -338,12 +338,13 @@ export const anotacions = {
   },
 }
 
-// Backup endpoints: every registered slice goes into the file, plus the mind maps
+// Backup endpoints: every registered slice goes into the file, plus the mind maps and the PDF annotations
 export const backup = {
   export: async (): Promise<BackupFile> => {
     const file: BackupFile = { version: BACKUP_VERSION, app: 'bombers', exported_at: now() }
     for (const slice of getSlices()) file[slice.name] = readSlice(slice)
     file.mapes = await allMapes()
+    file.anotacions = await allAnotacions()
     return file
   },
   import: async (file: BackupFile) => {
@@ -351,8 +352,10 @@ export const backup = {
       throw new ApiError('invalid backup')
     }
     if (file.version > BACKUP_VERSION) throw new ApiError('backup from a newer version')
-    // Validate the maps before writing anything, so a broken file changes nothing
+    // Validate the maps and the annotations before writing anything, so a broken file changes nothing
     const importedMapes = Array.isArray(file.mapes) ? file.mapes.map(migrateMapa) : null
+    const importedAnotacions = Array.isArray(file.anotacions) ? file.anotacions.map(migrateAnotacions) : null
+    if (importedAnotacions?.some((a) => a === null)) throw new ApiError('invalid annotations in backup')
     for (const slice of getSlices()) {
       const raw = file[slice.name]
       // v1 backups have no repassos: start them empty
@@ -361,10 +364,17 @@ export const backup = {
     }
     // Backups older than v3 have no maps: keep the ones on this device
     if (importedMapes) await db.replaceAll(IDB_STORES.MAPES, importedMapes)
+    // Backups older than v4 (and transfer codes) have no annotations: keep the ones on this device
+    if (importedAnotacions) {
+      // A PDF without annotations has no record
+      const records = (importedAnotacions as PdfAnotacions[]).filter((a) => countPagines(a.pagines) > 0)
+      await db.replaceAll(IDB_STORES.ANOTACIONS, records)
+    }
   },
   reset: async () => {
     for (const slice of getSlices()) removeSlice(slice)
     await db.clear(IDB_STORES.MAPES)
+    await db.clear(IDB_STORES.ANOTACIONS)
   },
 }
 

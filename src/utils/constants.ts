@@ -13,7 +13,7 @@ export const STORAGE_KEYS = {
 } as const
 
 // Current version of the backup file format
-export const BACKUP_VERSION = 3
+export const BACKUP_VERSION = 4
 
 // Prefix of the compressed text code used to move data between devices
 export const BACKUP_CODE_PREFIX = 'BMB2:'
