@@ -1,7 +1,7 @@
 import { Box, chakra, Text } from '@chakra-ui/react'
 import { memo } from 'react'
 import { useTranslation } from 'react-i18next'
-import { kindColors, kindLabel } from './SessionKindLabel'
+import { kindColors, kindLabel, sessionCount } from './SessionKindLabel'
 import { Session } from './types'
 
 export const DRAG_MIME = 'application/x-repas-session'
@@ -20,10 +20,11 @@ type SessionChipProps = {
 export const SessionChip = memo(({ session, onOpen, compact, expanded, labels }: SessionChipProps) => {
   const { t } = useTranslation()
   const colors = kindColors(session.kind)
-  const count = session.kind === 'estudi' ? session.rowIds.length : session.instances.length
+  const count = sessionCount(session)
   const isDone = session.kind !== 'estudi' && session.pending === 0
   const isOverdue = session.overdue > 0
-  const isDraggable = session.kind !== 'estudi' && !isDone
+  // Study days move from the drawer; test sessions are a projection, they don't move
+  const isDraggable = session.kind !== 'estudi' && session.kind !== 'test' && !isDone
 
   return (
     <chakra.button

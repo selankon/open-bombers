@@ -1,6 +1,16 @@
 import { COL, FET } from '~components/Planificacio/columns'
 import { Cells } from '~components/Planificacio/types'
-import { addDaysTo, addWeeksToId, dayInWeek, DayString, daysOfWeek, IsoDay, weekIdOf, WeekId } from '~utils/dates'
+import {
+  addDaysTo,
+  addWeeksToId,
+  dayInWeek,
+  dayOfTimestamp,
+  DayString,
+  daysOfWeek,
+  IsoDay,
+  weekIdOf,
+  WeekId,
+} from '~utils/dates'
 import { GenerateParams, Instance, RepasConfig, RepassosState, Session, TipusRepas, WeekConfig } from './types'
 
 export const instanceId = (rowId: string, tipus: TipusRepas, n: number) => `${rowId}|${tipus}|${n}`
@@ -19,8 +29,8 @@ export const cellColumnForInstance = (tipus: TipusRepas, n: number): string | nu
 }
 
 /**
- * Merges the "done" marks: the planificació cells (d1, setmanal, mensual#1, using the cell
- * timestamp as fet_el) and the calendar store (mensual n ≥ 2)
+ * Merges the "done" marks: the planificació cells (d1, setmanal, mensual, using the cell
+ * timestamp as fet_el) and the calendar store (llarg, puntual)
  */
 export const buildFets = (cells: Cells, estudis: Record<string, DayString>, fets: Record<string, string>) => {
   const merged: Record<string, string> = { ...fets }
@@ -72,7 +82,7 @@ export const seguentDiaLliure = (d: DayString, blocked: Set<string>) => {
   return day
 }
 
-/** Last day for which monthly reviews are generated */
+/** Last day for which monthly and long-term reviews are generated */
 export const horizonOf = (config: RepasConfig, avui: DayString) =>
   config.data_examen || addDaysTo(avui, config.horitzo_setmanes * 7)
 
@@ -86,6 +96,7 @@ export const generarInstancies = ({
   overrides,
   fets,
   fetDates = {},
+  puntuals = {},
   avui,
 }: GenerateParams): Instance[] => {
   const blocked = new Set(config.dies_bloquejats)
@@ -107,7 +118,7 @@ export const generarInstancies = ({
     const isDone = !!fetEl
     // A done review stays on the day it had when it was marked (not on the day it was marked)
     const date = isDone ? fetDates[id] || override || calc : override || calc
-    instances.push({
+    const instance: Instance = {
       id,
       rowId,
       tipus,
@@ -121,7 +132,9 @@ export const generarInstancies = ({
       fetEl,
       status: isDone ? 'fet' : date < avui ? 'endarrerit' : 'pendent',
       hasWarning,
-    })
+    }
+    instances.push(instance)
+    return instance
   }
 
   for (const [rowId, studyDate] of Object.entries(estudis)) {
@@ -144,16 +157,47 @@ export const generarInstancies = ({
     const setmanal = diaEfectiu(wSetmanal, weekDay(wSetmanal, 'setmanal', config, setmanes), blocked)
     push(rowId, 'setmanal', 1, studyDate, wSetmanal, setmanal.day, setmanal.hasWarning)
 
-    // Monthly reviews: S + 4, S + 8… up to the horizon
-    for (let n = 1; n < 500; n++) {
-      const w = addWeeksToId(studyWeek, config.setmanes_fins_mensual + (n - 1) * config.setmanes_entre_mensuals)
-      const mensual = diaEfectiu(w, weekDay(w, 'mensual', config, setmanes), blocked)
-      if (mensual.day > horizon) break
-      push(rowId, 'mensual', n, studyDate, w, mensual.day, mensual.hasWarning)
+    // Monthly review: only once, at S + 4 (then the tema is parked and kept alive with tests)
+    const wMensual = addWeeksToId(studyWeek, config.setmanes_fins_mensual)
+    const mensual = diaEfectiu(wMensual, weekDay(wMensual, 'mensual', config, setmanes), blocked)
+    if (mensual.day <= horizon) push(rowId, 'mensual', 1, studyDate, wMensual, mensual.day, mensual.hasWarning)
+
+    // Long-term reminders: S + n weeks, then n weeks after the previous one was done
+    if (config.llarg_actiu && config.setmanes_fins_llarg > 0) {
+      let w = addWeeksToId(studyWeek, config.setmanes_fins_llarg)
+      for (let n = 1; n < 100; n++) {
+        const llarg = diaEfectiu(w, weekDay(w, 'mensual', config, setmanes), blocked)
+        if (llarg.day > horizon) break
+        const inst = push(rowId, 'llarg', n, studyDate, w, llarg.day, llarg.hasWarning)
+        const base = inst.fetEl ? weekIdOf(dayOfTimestamp(inst.fetEl)) : w
+        w = addWeeksToId(base, config.setmanes_fins_llarg)
+      }
     }
+  }
+
+  // One-off reviews of the apartats that were blurry in a test
+  for (const [id, date] of Object.entries(puntuals)) {
+    const { rowId, n } = parseInstanceId(id)
+    push(rowId, 'puntual', n, estudis[rowId] || date, date, date, false)
   }
   return instances
 }
+
+const KIND_ORDER: Record<string, number> = {
+  estudi: 0,
+  d1: 1,
+  setmanal: 2,
+  mensual: 3,
+  llarg: 4,
+  puntual: 5,
+  test: 6,
+}
+
+/** Sessions by day, then kind */
+export const sortSessions = (sessions: Session[]) =>
+  [...sessions].sort((a, b) =>
+    a.date === b.date ? KIND_ORDER[a.kind] - KIND_ORDER[b.kind] || a.key.localeCompare(b.key) : a.date < b.date ? -1 : 1
+  )
 
 /**
  * Groups instances in sessions: same type + anchor + day. Manually moved instances (or done on
@@ -175,6 +219,7 @@ export const groupSessions = (instances: Instance[], estudis: Record<string, Day
         isManual,
         instances: [],
         rowIds: [],
+        tests: [],
         pending: 0,
         done: 0,
         overdue: 0,
@@ -202,6 +247,7 @@ export const groupSessions = (instances: Instance[], estudis: Record<string, Day
         isManual: false,
         instances: [],
         rowIds: [],
+        tests: [],
         pending: 0,
         done: 0,
         overdue: 0,
@@ -211,10 +257,7 @@ export const groupSessions = (instances: Instance[], estudis: Record<string, Day
     session.rowIds.push(rowId)
   }
 
-  const order = { estudi: 0, d1: 1, setmanal: 2, mensual: 3 }
-  return Array.from(map.values()).sort((a, b) =>
-    a.date === b.date ? order[a.kind] - order[b.kind] || a.key.localeCompare(b.key) : a.date < b.date ? -1 : 1
-  )
+  return sortSessions(Array.from(map.values()))
 }
 
 /** Not done instances per day */
@@ -235,25 +278,14 @@ export const nextPendingByRow = (instances: Instance[]) => {
 }
 
 // The calendar reviews shown in the planificació columns of one apartat
-export type RowReviews = Partial<Record<TipusRepas, Instance>>
+export type RowReviews = Partial<Record<'d1' | 'setmanal' | 'mensual', Instance>>
 
-/**
- * Per apartat: its daily and weekly review, and the current monthly one (the first not done,
- * or the last one when every monthly review up to the horizon is done)
- */
+/** Per apartat: its daily, weekly and monthly review */
 export const reviewsByRow = (instances: Instance[]) => {
   const result: Record<string, RowReviews> = {}
   for (const inst of instances) {
-    const row = (result[inst.rowId] ||= {})
-    if (inst.tipus !== 'mensual') {
-      row[inst.tipus] = inst
-      continue
-    }
-    const current = row.mensual
-    if (!current) row.mensual = inst
-    else if (current.isDone) {
-      if (!inst.isDone || inst.n > current.n) row.mensual = inst
-    } else if (!inst.isDone && inst.n < current.n) row.mensual = inst
+    if (inst.tipus !== 'd1' && inst.tipus !== 'setmanal' && inst.tipus !== 'mensual') continue
+    ;(result[inst.rowId] ||= {})[inst.tipus] = inst
   }
   return result
 }
@@ -267,5 +299,6 @@ export const instancesFromState = (state: RepassosState, cells: Cells, avui: Day
     overrides: state.overrides,
     fets: buildFets(cells, state.estudis, state.fets),
     fetDates: state.fet_dates,
+    puntuals: state.puntuals,
     avui,
   })

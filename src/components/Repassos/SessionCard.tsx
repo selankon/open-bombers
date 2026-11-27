@@ -4,7 +4,7 @@ import { useStudyData } from '~components/Layout/Contexts/StudyDataContext'
 import { Card } from '~components/Layout/LayoutComponents'
 import { icons } from '~theme/icons'
 import { ApartatItem } from './ApartatItem'
-import { kindColors, kindLabel } from './SessionKindLabel'
+import { kindColors, sessionTitle } from './SessionKindLabel'
 import { Instance, Session } from './types'
 import { useDoneToggle } from './useDoneToggle'
 
@@ -44,10 +44,7 @@ export const SessionCard = ({ session, instances, showDate }: SessionCardProps) 
       >
         <Box w={2.5} h={2.5} borderRadius='full' bg={colors.fg} />
         <Text fontWeight={700} whiteSpace='nowrap' mr='auto'>
-          {t('repassos.session_title', {
-            defaultValue: 'Repàs {{ kind }}',
-            kind: kindLabel(t, session.kind).toLowerCase(),
-          })}
+          {sessionTitle(t, session.kind)}
           <Text as='span' color='textMuted' fontWeight={500}>
             {' · '}
             {list.length}

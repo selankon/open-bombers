@@ -14,6 +14,7 @@ import { addDaysTo, formatLong, formatShort } from '~utils/dates'
 import { useMoveOverdueToToday } from './queries'
 import { SessionCard } from './SessionCard'
 import { kindColors, kindLabel } from './SessionKindLabel'
+import { TestSessionCard } from './TestSession'
 
 const Section = ({ title, right, children }: { title: string; right?: ReactNode; children: ReactNode }) => (
   <Box>
@@ -46,7 +47,7 @@ const Stagger = ({ index, children }: { index: number; children: ReactNode }) =>
 export const TodayView = () => {
   const { t } = useTranslation()
   const toast = useToast()
-  const { sessions, instances, avui, repassos, load } = useStudyData()
+  const { sessions, instances, avui, repassos, load, paquet } = useStudyData()
   const { mutateAsync: moveOverdue, isPending: isMoving } = useMoveOverdueToToday()
 
   const overdue = useMemo(
@@ -81,14 +82,16 @@ export const TodayView = () => {
     }
   }
 
-  if (!Object.keys(repassos.estudis).length) {
+  const notInApp = paquet.filter((p) => !p.aApp).length
+
+  if (!Object.keys(repassos.estudis).length && !paquet.length && !instances.length) {
     return (
       <ElementNotFound
         icon={icons.study}
         title={t('repassos.empty_title', { defaultValue: 'Encara no has registrat cap estudi' })}
         desc={t('repassos.empty_desc', {
           defaultValue:
-            'Quan registris què has estudiat cada dia, aquí apareixeran els repassos diaris, setmanals i mensuals que et toquen.',
+            'Quan registris què has estudiat cada dia, aquí apareixeran els repassos i els tests que et toquen.',
         })}
       />
     )
@@ -98,6 +101,23 @@ export const TodayView = () => {
 
   return (
     <Stack spacing={8}>
+      {notInApp > 0 && (
+        <Card px={4} py={3}>
+          <Flex align='center' gap={3} wrap='wrap'>
+            <Box w={2.5} h={2.5} borderRadius='full' bg={kindColors('test').fg} flexShrink={0} />
+            <Text fontSize='sm' flex={1} minW='200px'>
+              {t('repassos.paquet_nous', {
+                defaultValue: 'Tens {{ count }} temes nous per afegir al paquet d’estudi de l’App.',
+                count: notInApp,
+              })}
+            </Text>
+            <Button as={RouterLink} to={ROUTES.REPASSOS.PAQUET} size='sm' variant='ghost' rightIcon={<icons.next />}>
+              {t('repassos.paquet_open', { defaultValue: 'Veure el paquet' })}
+            </Button>
+          </Flex>
+        </Card>
+      )}
+
       {overdueCount > 0 && (
         <Section
           title={t('repassos.overdue', { defaultValue: 'Endarrerits ({{ count }})', count: overdueCount })}
@@ -139,7 +159,7 @@ export const TodayView = () => {
           <Stack spacing={3}>
             {todaySessions.map((s, i) => (
               <Stagger key={s.key} index={i}>
-                <SessionCard session={s} />
+                {s.kind === 'test' ? <TestSessionCard session={s} /> : <SessionCard session={s} />}
               </Stagger>
             ))}
           </Stack>

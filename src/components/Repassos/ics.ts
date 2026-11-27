@@ -31,6 +31,9 @@ const SUMMARY_LABELS: Record<SessionKind, string> = {
   d1: 'Repàs diari',
   setmanal: 'Repàs setmanal',
   mensual: 'Repàs mensual',
+  llarg: 'Recordatori a llarg termini',
+  puntual: 'Repàs puntual',
+  test: 'Test del paquet',
   estudi: 'Estudi',
 }
 
@@ -94,31 +97,48 @@ interface BuildParams {
  */
 export const buildIcsEvents = ({ sessions, structure, levels, options, avui }: BuildParams): IcsEvent[] => {
   const { rowToTema, rowIndex } = indexStructure(structure)
+  const temaById = new Map(structure.temes.map((t) => [t.id, t]))
   const apartatOf = (rowId: string) => rowToTema[rowId]?.apartats.find((a) => a.row_id === rowId)
   const events: IcsEvent[] = []
 
   for (const session of sessions) {
     if (session.kind === 'estudi' && !options.include_estudis) continue
+    if (session.kind === 'test' && !options.include_tests) continue
     if (options.range === 'from_today' && session.date < avui) continue
 
-    const rowIds =
-      session.kind === 'estudi'
-        ? session.rowIds
-        : session.instances.filter((i) => options.include_done || !i.isDone).map((i) => i.rowId)
-    if (!rowIds.length) continue
+    let description: string
+    let summary: string
+    if (session.kind === 'test') {
+      // One line per tema
+      const temes = session.tests.filter((i) => options.include_done || !i.isDone)
+      if (!temes.length) continue
+      description = temes
+        .map((i) => {
+          const tema = temaById.get(i.temaId)
+          return tema ? `${temaShortCode(tema)} · ${tema.nom}` : i.temaId
+        })
+        .join('\n')
+      summary = `${SUMMARY_LABELS.test} (${temes.length} ${temes.length === 1 ? 'tema' : 'temes'})`
+    } else {
+      const rowIds =
+        session.kind === 'estudi'
+          ? session.rowIds
+          : session.instances.filter((i) => options.include_done || !i.isDone).map((i) => i.rowId)
+      if (!rowIds.length) continue
 
-    const sorted = [...new Set(rowIds)].sort((a, b) => (rowIndex[a] ?? 0) - (rowIndex[b] ?? 0))
-    const description = sorted
-      .map((rowId) => {
-        const tema = rowToTema[rowId]
-        const apartat = apartatOf(rowId)
-        if (!tema || !apartat) return rowId
-        const prefix = levels[rowId] === 'NB' ? '[NB] ' : ''
-        return `${prefix}${temaShortCode(tema)} · ${apartat.num} ${apartat.titol}`
-      })
-      .join('\n')
-    const count = sorted.length
-    const summary = `${SUMMARY_LABELS[session.kind]} (${count} ${count === 1 ? 'apartat' : 'apartats'})`
+      const sorted = [...new Set(rowIds)].sort((a, b) => (rowIndex[a] ?? 0) - (rowIndex[b] ?? 0))
+      description = sorted
+        .map((rowId) => {
+          const tema = rowToTema[rowId]
+          const apartat = apartatOf(rowId)
+          if (!tema || !apartat) return rowId
+          const prefix = levels[rowId] === 'NB' ? '[NB] ' : ''
+          return `${prefix}${temaShortCode(tema)} · ${apartat.num} ${apartat.titol}`
+        })
+        .join('\n')
+      const count = sorted.length
+      summary = `${SUMMARY_LABELS[session.kind]} (${count} ${count === 1 ? 'apartat' : 'apartats'})`
+    }
 
     const lines: string[] = []
     if (options.mode === 'allday') {

@@ -10,12 +10,14 @@ import {
   parseInstanceId,
 } from '~components/Repassos/logic'
 import {
+  AddPuntualsParams,
   IcsState,
   Instance,
   MoveSessionParams,
   RegisterStudyParams,
   RepasConfig,
   RepassosState,
+  SaveTestParams,
   WeekConfig,
 } from '~components/Repassos/types'
 import { BackupFile } from '~components/Backup/types'
@@ -82,6 +84,10 @@ export const icsSlice = registerSlice<IcsState>({
 
 const now = () => new Date().toISOString()
 
+/** Copy of `map` without the instance ids that match */
+const withoutIds = <T>(map: Record<string, T>, drop: (id: string) => boolean) =>
+  Object.fromEntries(Object.entries(map).filter(([id]) => !drop(id)))
+
 /** Returns a copy of `cells` with one cell changed (only the touched row gets a new object) */
 const withCell = (cells: Cells, rowId: string, colId: string, value: string, manual?: boolean): Cells => {
   const row = { ...(cells[rowId] || {}) }
@@ -147,14 +153,23 @@ export const repassos = {
     const rows = new Set(rowIds)
     const estudis = { ...state.estudis }
     rowIds.forEach((r) => (estudis[r] = date))
-    const overrides = Object.fromEntries(
-      Object.entries(state.overrides).filter(([id]) => !rows.has(parseInstanceId(id).rowId))
-    )
+    const overrides = withoutIds(state.overrides, (id) => rows.has(parseInstanceId(id).rowId))
+    // Long-term reminders done belong to the previous cycle
+    const isOldLlarg = (id: string) => {
+      const { rowId, tipus } = parseInstanceId(id)
+      return tipus === 'llarg' && rows.has(rowId) && state.estudis[rowId] !== date
+    }
     let cells = readSlice(cellsSlice)
     for (const r of rowIds) {
       if (cells[r]?.[COL.VEURE_CLASSE]?.v !== FET) cells = withCell(cells, r, COL.VEURE_CLASSE, FET)
     }
-    return commit(cells, { ...state, estudis, overrides })
+    return commit(cells, {
+      ...state,
+      estudis,
+      overrides,
+      fets: withoutIds(state.fets, isOldLlarg),
+      fet_dates: withoutIds(state.fet_dates, isOldLlarg),
+    })
   },
 
   // Forgets the study day of some apartats (their reviews disappear)
@@ -162,15 +177,20 @@ export const repassos = {
     const state = readSlice(repassosSlice)
     const rows = new Set(rowIds)
     const estudis = Object.fromEntries(Object.entries(state.estudis).filter(([r]) => !rows.has(r)))
-    const overrides = Object.fromEntries(
-      Object.entries(state.overrides).filter(([id]) => !rows.has(parseInstanceId(id).rowId))
-    )
-    const fet_dates = Object.fromEntries(
-      Object.entries(state.fet_dates).filter(([id]) => !rows.has(parseInstanceId(id).rowId))
-    )
+    // Puntual reviews don't depend on the study day: they stay
+    const ofRows = (id: string) => {
+      const { rowId, tipus } = parseInstanceId(id)
+      return rows.has(rowId) && tipus !== 'puntual'
+    }
     let cells = readSlice(cellsSlice)
     if (state.config.sync_repas_seguent) rowIds.forEach((r) => (cells = withCell(cells, r, COL.REPAS_SEGUENT, '')))
-    return commit(cells, { ...state, estudis, overrides, fet_dates })
+    return commit(cells, {
+      ...state,
+      estudis,
+      overrides: withoutIds(state.overrides, ofRows),
+      fets: withoutIds(state.fets, ofRows),
+      fet_dates: withoutIds(state.fet_dates, ofRows),
+    })
   },
 
   updateConfig: async (config: Partial<RepasConfig>) => {
@@ -217,7 +237,7 @@ export const repassos = {
     return commit(readSlice(cellsSlice), { ...state, overrides })
   },
 
-  // Marks instances as done / not done (d1, setmanal and mensual#1 live in the planificació cells)
+  // Marks instances as done / not done (d1, setmanal and mensual live in the planificació cells)
   setDone: async ({ instances, done }: { instances: Instance[]; done: boolean }) => {
     const state = readSlice(repassosSlice)
     let cells = readSlice(cellsSlice)
@@ -241,6 +261,64 @@ export const repassos = {
     const avui = today()
     instances.filter((i) => i.status === 'endarrerit').forEach((i) => (overrides[i.id] = avui))
     return commit(readSlice(cellsSlice), { ...state, overrides })
+  },
+
+  // Creates one-off reviews of the blurry apartats of a test (one pending per apartat and day)
+  addPuntuals: async ({ rowIds, date }: AddPuntualsParams) => {
+    const state = readSlice(repassosSlice)
+    const puntuals = { ...state.puntuals }
+    for (const rowId of rowIds) {
+      const ids = Object.keys(puntuals).filter((id) => parseInstanceId(id).rowId === rowId)
+      if (ids.some((id) => puntuals[id] === date && !state.fets[id])) continue
+      const n = ids.reduce((max, id) => Math.max(max, parseInstanceId(id).n), 0) + 1
+      puntuals[instanceId(rowId, 'puntual', n)] = date
+    }
+    return commit(readSlice(cellsSlice), { ...state, puntuals })
+  },
+
+  removePuntual: async (id: string) => {
+    const state = readSlice(repassosSlice)
+    const drop = (key: string) => key === id
+    return commit(readSlice(cellsSlice), {
+      ...state,
+      puntuals: withoutIds(state.puntuals, drop),
+      fets: withoutIds(state.fets, drop),
+      fet_dates: withoutIds(state.fet_dates, drop),
+      overrides: withoutIds(state.overrides, drop),
+    })
+  },
+
+  // Saves (or removes) the test result of a tema on a day
+  saveTestResult: async ({ temaId, data, resultat }: SaveTestParams) => {
+    const state = readSlice(repassosSlice)
+    const list = (state.paquet.resultats[temaId] || []).filter((r) => r.data !== data)
+    if (resultat) list.push({ data, percent: resultat.percent })
+    list.sort((a, b) => (a.data < b.data ? -1 : a.data > b.data ? 1 : 0))
+    const resultats = { ...state.paquet.resultats }
+    if (list.length) resultats[temaId] = list
+    else delete resultats[temaId]
+    return commit(readSlice(cellsSlice), { ...state, paquet: { ...state.paquet, resultats } })
+  },
+
+  // Adds a tema to the package by hand, or removes it
+  setInPaquet: async ({ temaId, inPaquet }: { temaId: string; inPaquet: boolean }) => {
+    const state = readSlice(repassosSlice)
+    const exclosos = state.paquet.exclosos.filter((id) => id !== temaId)
+    const manuals = { ...state.paquet.manuals }
+    if (inPaquet) manuals[temaId] ||= today()
+    else {
+      delete manuals[temaId]
+      exclosos.push(temaId)
+    }
+    return commit(readSlice(cellsSlice), { ...state, paquet: { ...state.paquet, exclosos, manuals } })
+  },
+
+  // Remembers which temes are already in the package of the tests App
+  setAApp: async ({ temaIds, value }: { temaIds: string[]; value: boolean }) => {
+    const state = readSlice(repassosSlice)
+    const set = new Set(state.paquet.a_app)
+    temaIds.forEach((id) => (value ? set.add(id) : set.delete(id)))
+    return commit(readSlice(cellsSlice), { ...state, paquet: { ...state.paquet, a_app: Array.from(set) } })
   },
 }
 

@@ -4,6 +4,7 @@ export const ROUTES = {
   REPASSOS: {
     TODAY: '/repassos',
     CALENDAR: '/repassos/calendari',
+    PAQUET: '/repassos/paquet',
   },
   TEMARI: '/temari',
   TEMARI_PDF: '/temari/:id',

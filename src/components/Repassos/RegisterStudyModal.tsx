@@ -79,6 +79,7 @@ export const RegisterStudyModal = ({ isOpen, onClose, initial }: RegisterStudyMo
       d1: instances.filter((i) => i.tipus === 'd1').map((i) => i.date),
       setmanal: instances.filter((i) => i.tipus === 'setmanal').map((i) => i.date),
       mensual: instances.filter((i) => i.tipus === 'mensual').map((i) => i.date),
+      llarg: instances.filter((i) => i.tipus === 'llarg').map((i) => i.date),
     }
   }, [date, repassos.config, repassos.setmanes, avui])
 
@@ -210,18 +211,20 @@ export const RegisterStudyModal = ({ isOpen, onClose, initial }: RegisterStudyMo
                     {t('repassos.preview', { defaultValue: 'Repassos que es generaran' })}
                   </Text>
                   <Stack spacing={1} fontSize='sm'>
-                    {(['d1', 'setmanal', 'mensual'] as const).map((kind) => (
-                      <Flex key={kind} gap={2}>
-                        <Text fontWeight={700} color={kindColors(kind).fg} minW='72px'>
-                          {kindLabel(t, kind)}:
-                        </Text>
-                        <Text>
-                          {preview[kind].slice(0, 3).map(formatShort).join(', ')}
-                          {preview[kind].length > 3 ? '…' : ''}
-                          {!preview[kind].length && '—'}
-                        </Text>
-                      </Flex>
-                    ))}
+                    {(['d1', 'setmanal', 'mensual', 'llarg'] as const)
+                      .filter((kind) => kind !== 'llarg' || repassos.config.llarg_actiu)
+                      .map((kind) => (
+                        <Flex key={kind} gap={2}>
+                          <Text fontWeight={700} color={kindColors(kind).fg} minW='104px'>
+                            {kindLabel(t, kind)}:
+                          </Text>
+                          <Text>
+                            {preview[kind].slice(0, 3).map(formatShort).join(', ')}
+                            {preview[kind].length > 3 ? '…' : ''}
+                            {!preview[kind].length && '—'}
+                          </Text>
+                        </Flex>
+                      ))}
                   </Stack>
                 </Box>
               )}

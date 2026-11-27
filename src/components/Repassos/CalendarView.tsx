@@ -19,6 +19,7 @@ import { useTranslation } from 'react-i18next'
 import { useSearchParams } from 'react-router-dom'
 import { useStudyData } from '~components/Layout/Contexts/StudyDataContext'
 import { Card } from '~components/Layout/LayoutComponents'
+import { temaShortCode } from '~components/Planificacio/structure'
 import { icons } from '~theme/icons'
 import {
   addDaysTo,
@@ -38,6 +39,7 @@ import { useMoveSession, useUpdateRepasConfig } from './queries'
 import { RegisterStudyInitial } from './RegisterStudyModal'
 import { DRAG_MIME, SessionChip } from './SessionChip'
 import { SessionDrawer } from './SessionDrawer'
+import { useTemaById } from './TestSession'
 import { kindColors, kindLabel } from './SessionKindLabel'
 import { Session, SessionKind } from './types'
 import { WeekConfigPopover } from './WeekConfigPopover'
@@ -246,7 +248,16 @@ export const CalendarView = ({ onRegister }: CalendarViewProps) => {
 
 const Legend = () => {
   const { t } = useTranslation()
-  const kinds: SessionKind[] = ['estudi', 'd1', 'setmanal', 'mensual']
+  const { repassos, instances } = useStudyData()
+  const kinds: SessionKind[] = [
+    'estudi',
+    'd1',
+    'setmanal',
+    'mensual',
+    ...(repassos.config.llarg_actiu ? (['llarg'] as const) : []),
+    ...(instances.some((i) => i.tipus === 'puntual') ? (['puntual'] as const) : []),
+    ...(repassos.config.tests_actius ? (['test'] as const) : []),
+  ]
   return (
     <HStack spacing={3} mb={3} wrap='wrap' fontSize='xs' color='textMuted'>
       {kinds.map((k) => (
@@ -297,6 +308,7 @@ const DayCell = memo(
   }: DayCellProps) => {
     const { t } = useTranslation()
     const labelOf = useApartatLabel()
+    const temaById = useTemaById()
     const [isOver, setIsOver] = useState(false)
     const isOverloaded = load > threshold
 
@@ -382,12 +394,17 @@ const DayCell = memo(
               compact={isMobile && !isWeek}
               expanded={isWeek && !isMobile}
               labels={
-                isWeek && !isMobile
-                  ? (s.kind === 'estudi' ? s.rowIds : s.instances.map((i) => i.rowId)).map((r) => {
-                      const l = labelOf(r)
-                      return `${l.code} · ${l.text}`
-                    })
-                  : undefined
+                !isWeek || isMobile
+                  ? undefined
+                  : s.kind === 'test'
+                    ? s.tests.map((i) => {
+                        const tema = temaById.get(i.temaId)
+                        return tema ? `${temaShortCode(tema)} · ${tema.nom}` : i.temaId
+                      })
+                    : (s.kind === 'estudi' ? s.rowIds : s.instances.map((i) => i.rowId)).map((r) => {
+                        const l = labelOf(r)
+                        return `${l.code} · ${l.text}`
+                      })
               }
             />
           ))}
