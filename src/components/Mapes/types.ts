@@ -52,6 +52,8 @@ export interface MapaNode {
   mida?: NodeMida
   // Width of the box set by hand (world px): longer lines of text. Missing: it follows the text.
   ample?: number
+  // Height of the box set by hand (world px). Text that doesn't fit ends with "…".
+  alt?: number
   // Line that joins the node with its parent
   branca?: BrancaStyle
 }

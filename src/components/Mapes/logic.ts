@@ -67,6 +67,9 @@ const migrateNode = (n: any): MapaNode => {
     ...(Number(n.ample) > 0
       ? { ample: Math.round(Math.min(MAPA.NODE_AMPLE_MAX, Math.max(MAPA.NODE_AMPLE_MIN, Number(n.ample)))) }
       : {}),
+    ...(Number(n.alt) > 0
+      ? { alt: Math.round(Math.min(MAPA.NODE_ALT_MAX, Math.max(MAPA.NODE_ALT_MIN, Number(n.alt)))) }
+      : {}),
     ...(branca ? { branca } : {}),
   }
 }
@@ -194,15 +197,28 @@ export const colorOf = (map: Record<string, MapaNode>, id: string): NodeColor =>
   return 'primari'
 }
 
-/** Sets (or clears, with undefined) the hand-set width of an idea, optionally moving its center */
-export const setAmple = (nodes: MapaNode[], id: string, ample: number | undefined, x?: number) =>
+export type BoxSize = Pick<MapaNode, 'ample' | 'alt'>
+
+/**
+ * Sets the hand-set size of an idea (the missing sides keep their value) and optionally moves its
+ * center. `null` gives back the automatic size.
+ */
+export const setBoxSize = (nodes: MapaNode[], id: string, size: BoxSize | null, at?: { x: number; y: number }) =>
   nodes.map((n) => {
-    if (n.id !== id || (n.ample === ample && (x === undefined || n.x === x))) return n
-    const moved = x === undefined ? n : { ...n, x }
-    if (ample !== undefined) return { ...moved, ample }
-    const { ample: _drop, ...rest } = moved
-    return rest
+    if (n.id !== id) return n
+    if (!size && !at && n.ample === undefined && n.alt === undefined) return n
+    const { ample, alt, ...rest } = n
+    const next: MapaNode = { ...rest, ...at }
+    const w = size ? (size.ample ?? ample) : undefined
+    const h = size ? (size.alt ?? alt) : undefined
+    if (w !== undefined) next.ample = w
+    if (h !== undefined) next.alt = h
+    return next
   })
+
+/** Lines of text that fit in a box of hand-set height (null: no limit) */
+export const maxLines = (alt: number | undefined, padY: number, borderPx: number, lineH: number) =>
+  alt ? Math.max(1, Math.floor((alt - padY * 2 - borderPx * 2 + 1) / lineH)) : null
 
 /** Side an idea grows to when it gets wider, so the side facing its parent stays still (0: both) */
 export const growSide = (map: Record<string, MapaNode>, id: string): 1 | -1 | 0 => {

@@ -4,11 +4,19 @@ import { KeyboardEvent, memo, MouseEvent, PointerEvent, useEffect, useLayoutEffe
 import { useTranslation } from 'react-i18next'
 import { icons } from '~theme/icons'
 import { duration, spring } from '~theme/motion'
+import { maxLines } from '../logic'
 import { LINE_HEIGHT, nodeLook } from '../nodeLook'
 import { colorLook, cssColor } from '../colors'
 import { MapaNode, NodeColor } from '../types'
 
 const MotionBox = motion(Box)
+
+const CORNERS: [1 | -1, 1 | -1][] = [
+  [-1, -1],
+  [1, -1],
+  [-1, 1],
+  [1, 1],
+]
 
 type NodeViewProps = {
   node: MapaNode
@@ -28,9 +36,8 @@ type NodeViewProps = {
   onDoubleClick: (id: string) => void
   onToggleFold: (id: string) => void
   onSize: (id: string, w: number, h: number) => void
-  // Drag of the width handle (dir: side of the handle) and reset with a double click
-  onResizePointerDown: (id: string, dir: 1 | -1, e: PointerEvent) => void
-  onResetWidth: (id: string) => void
+  // Press on a corner (sx / sy: side of that corner): drag to resize, double press for the automatic size
+  onResizePointerDown: (id: string, sx: 1 | -1, sy: 1 | -1, e: PointerEvent) => void
   // Text when editing started from a typed key (replaces the current text)
   initialDraft: string | null
   onCommit: (id: string, text: string, next?: 'child' | 'sibling') => void
@@ -58,7 +65,6 @@ export const NodeView = memo(
     onToggleFold,
     onSize,
     onResizePointerDown,
-    onResetWidth,
     initialDraft,
     onCommit,
     onCancel,
@@ -114,8 +120,12 @@ export const NodeView = memo(
     const line = cssColor(c.line)
     const strong = cssColor(c.strong)
     const folded = !!node.plegat && childCount > 0
-    // The width handle goes on the side without the fold toggle
-    const handleSide: 1 | -1 = childCount > 0 ? (side > 0 ? -1 : 1) : 1
+    // A box with a hand-set height cuts the text with "…" (while editing it grows to show everything)
+    const fixedH = !!node.alt && !isEditing
+    const lines = fixedH ? maxLines(node.alt, look.padY, look.borderPx, look.fontPx * LINE_HEIGHT) : null
+    const resizeLabel = t('mapes.node_resize', {
+      defaultValue: 'Arrossega per canviar la mida (doble clic: automàtica)',
+    })
     const round = look.forma === 'cercle'
     const radius =
       look.forma === 'cercle'
@@ -165,8 +175,10 @@ export const NodeView = memo(
           minW={`${look.minW}px`}
           maxW={node.ample ? undefined : `${look.maxW + look.padX * 2}px`}
           w={node.ample ? `${node.ample}px` : 'max-content'}
+          h={fixedH ? `${node.alt}px` : undefined}
+          minH={node.alt && isEditing ? `${node.alt}px` : undefined}
           // A circle is as tall as it is wide (it grows into an ellipse with long texts)
-          sx={{ aspectRatio: round ? '1' : undefined, touchAction: 'none' }}
+          sx={{ aspectRatio: round && !node.alt ? '1' : undefined, touchAction: 'none' }}
           px={`${look.padX}px`}
           py={`${look.padY}px`}
           borderRadius={radius}
@@ -186,6 +198,7 @@ export const NodeView = memo(
             wordBreak='break-word'
             color={look.text}
             opacity={text ? 1 : 0.6}
+            noOfLines={lines ?? undefined}
           >
             {/* The trailing space keeps the height of an empty last line while typing */}
             {text ? (isEditing ? `${text} ` : text) : placeholder}
@@ -218,40 +231,36 @@ export const NodeView = memo(
               _placeholder={{ color: look.text, opacity: 0.6 }}
             />
           )}
-          {isSelected && !isEditing && interactive && (
-            <Box
-              role='separator'
-              aria-orientation='vertical'
-              aria-label={t('mapes.node_resize', {
-                defaultValue: 'Arrossega per canviar l’amplada (doble clic: automàtica)',
-              })}
-              title={t('mapes.node_resize', {
-                defaultValue: 'Arrossega per canviar l’amplada (doble clic: automàtica)',
-              })}
-              onPointerDown={(e: PointerEvent) => {
-                e.stopPropagation()
-                onResizePointerDown(node.id, handleSide, e)
-              }}
-              onDoubleClick={(e: MouseEvent) => {
-                e.stopPropagation()
-                onResetWidth(node.id)
-              }}
-              position='absolute'
-              top='50%'
-              {...(handleSide > 0 ? { right: 0 } : { left: 0 })}
-              transform={`translate(${handleSide > 0 ? '50%' : '-50%'}, -50%)`}
-              // Big invisible hit area around a slim visible grip
-              w={5}
-              h={8}
-              display='flex'
-              alignItems='center'
-              justifyContent='center'
-              cursor='ew-resize'
-              sx={{ touchAction: 'none' }}
-            >
-              <Box w='6px' h={5} borderRadius='full' bg='surface' borderWidth='1.5px' borderColor={strong} />
-            </Box>
-          )}
+          {/* Corners resize the box: invisible on every idea, with a visible grip on the selected one */}
+          {!isEditing &&
+            !isDragging &&
+            interactive &&
+            CORNERS.map(([sx, sy]) => (
+              <Box
+                key={`${sx}${sy}`}
+                aria-hidden
+                title={resizeLabel}
+                onPointerDown={(e: PointerEvent) => {
+                  e.stopPropagation()
+                  onResizePointerDown(node.id, sx, sy, e)
+                }}
+                position='absolute'
+                {...(sx > 0 ? { right: 0 } : { left: 0 })}
+                {...(sy > 0 ? { bottom: 0 } : { top: 0 })}
+                transform={`translate(${sx * 50}%, ${sy * 50}%)`}
+                w={4}
+                h={4}
+                display='flex'
+                alignItems='center'
+                justifyContent='center'
+                cursor={sx === sy ? 'nwse-resize' : 'nesw-resize'}
+                sx={{ touchAction: 'none' }}
+              >
+                {isSelected && (
+                  <Box w={2} h={2} borderRadius='2px' bg='surface' borderWidth='1.5px' borderColor={strong} />
+                )}
+              </Box>
+            ))}
           {childCount > 0 && (folded || isSelected) && !isEditing && interactive && (
             <Flex
               as='button'

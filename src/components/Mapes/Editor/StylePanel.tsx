@@ -18,6 +18,7 @@ import { useTranslation } from 'react-i18next'
 import { icons } from '~theme/icons'
 import { MAPA } from '~utils/constants'
 import { colorLook, customColor, isCustomColor, parseCustom } from '../colors'
+import { BoxSize } from '../logic'
 import {
   BRANCA_ESTILS,
   BRANCA_GRUIXOS,
@@ -262,6 +263,44 @@ const CustomColorPicker = ({
   )
 }
 
+const SizeSlider = ({
+  label,
+  min,
+  max,
+  value,
+  onChange,
+  onChangeEnd,
+}: {
+  label: string
+  min: number
+  max: number
+  value: number
+  onChange: (v: number) => void
+  onChangeEnd: () => void
+}) => (
+  <Flex align='center' gap={3}>
+    <Text fontSize='xs' color='textMuted' w={14} flexShrink={0}>
+      {label}
+    </Text>
+    <Slider
+      aria-label={label}
+      min={min}
+      max={max}
+      step={MAPA.NODE_AMPLE_STEP}
+      value={Math.round(value)}
+      onChange={onChange}
+      onChangeEnd={onChangeEnd}
+      colorScheme='primary'
+      focusThumbOnChange={false}
+    >
+      <SliderTrack>
+        <SliderFilledTrack />
+      </SliderTrack>
+      <SliderThumb />
+    </Slider>
+  </Flex>
+)
+
 const FormaPreview = ({ forma }: { forma: NodeForma }) => (
   <Box
     w={forma === 'cercle' ? 5 : 7}
@@ -329,10 +368,11 @@ type StylePanelProps = {
   onColor: (c: NodeColor) => void
   onColorPreview: (c: NodeColor) => void
   onColorPreviewEnd: () => void
-  // Current width of the box (hand-set or measured)
+  // Current size of the box (hand-set or measured)
   width: number
-  onWidth: (w: number | undefined) => void
-  onWidthPreview: (w: number) => void
+  height: number
+  onBoxReset: () => void
+  onBoxPreview: (size: BoxSize) => void
   onNode: (patch: Partial<Pick<MapaNode, 'forma' | 'emplenat' | 'mida'>>) => void
   onBranca: (patch: Partial<BrancaStyle>) => void
   onEditLabel: () => void
@@ -349,8 +389,9 @@ export const StylePanel = ({
   onColorPreview,
   onColorPreviewEnd,
   width,
-  onWidth,
-  onWidthPreview,
+  height,
+  onBoxReset,
+  onBoxPreview,
   onNode,
   onBranca,
   onEditLabel,
@@ -360,6 +401,7 @@ export const StylePanel = ({
   const emplenat = node.emplenat ?? (isRoot ? 'suau' : 'buit')
   const mida = node.mida ?? 'm'
   const branca = node.branca ?? {}
+  const auto = node.ample === undefined && node.alt === undefined
   const gruix = branca.gruix ?? (isRoot ? 3 : 2)
 
   const formaNames: Record<NodeForma, string> = {
@@ -437,38 +479,40 @@ export const StylePanel = ({
         </Section>
       </Flex>
 
-      <Section title={t('mapes.style.width', { defaultValue: 'Amplada de la caixa' })}>
-        <Flex align='center' gap={3}>
+      <Section title={t('mapes.style.box_size', { defaultValue: 'Mida de la caixa' })}>
+        <Flex align='center' gap={4}>
           <Button
-            aria-pressed={!node.ample}
-            onClick={() => onWidth(undefined)}
+            aria-pressed={auto}
+            onClick={onBoxReset}
             variant='outline'
             colorScheme='gray'
             borderRadius='sm'
-            borderColor={!node.ample ? 'accent' : 'border'}
-            borderWidth={!node.ample ? '2px' : '1px'}
-            bg={!node.ample ? 'mapa.primari.bg' : 'surface'}
+            borderColor={auto ? 'accent' : 'border'}
+            borderWidth={auto ? '2px' : '1px'}
+            bg={auto ? 'mapa.primari.bg' : 'surface'}
             h={10}
             flexShrink={0}
           >
             {t('mapes.style.width_auto', { defaultValue: 'Automàtica' })}
           </Button>
-          <Slider
-            aria-label={t('mapes.style.width', { defaultValue: 'Amplada de la caixa' })}
-            min={MAPA.NODE_AMPLE_MIN}
-            max={MAPA.NODE_AMPLE_MAX}
-            step={MAPA.NODE_AMPLE_STEP}
-            value={Math.round(width)}
-            onChange={onWidthPreview}
-            onChangeEnd={onColorPreviewEnd}
-            colorScheme='primary'
-            focusThumbOnChange={false}
-          >
-            <SliderTrack>
-              <SliderFilledTrack />
-            </SliderTrack>
-            <SliderThumb />
-          </Slider>
+          <Stack spacing={1} flex={1}>
+            <SizeSlider
+              label={t('mapes.style.box_width', { defaultValue: 'Amplada' })}
+              min={MAPA.NODE_AMPLE_MIN}
+              max={MAPA.NODE_AMPLE_MAX}
+              value={width}
+              onChange={(v) => onBoxPreview({ ample: v })}
+              onChangeEnd={onColorPreviewEnd}
+            />
+            <SizeSlider
+              label={t('mapes.style.box_height', { defaultValue: 'Alçada' })}
+              min={MAPA.NODE_ALT_MIN}
+              max={MAPA.NODE_ALT_MAX}
+              value={height}
+              onChange={(v) => onBoxPreview({ alt: v })}
+              onChangeEnd={onColorPreviewEnd}
+            />
+          </Stack>
         </Flex>
       </Section>
 

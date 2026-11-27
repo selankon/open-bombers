@@ -92,14 +92,18 @@ export const MAPA = {
   // Approximate node box used to avoid overlaps and to fit the view
   NODE_W: 180,
   NODE_H: 48,
-  // Width limits of an idea resized by hand (world px) and the step of its slider
+  // Size limits of an idea resized by hand (world px) and the step of its sliders
   NODE_AMPLE_MIN: 64,
   NODE_AMPLE_MAX: 800,
+  NODE_ALT_MIN: 28,
+  NODE_ALT_MAX: 600,
   NODE_AMPLE_STEP: 10,
   // Padding around the content when fitting the view (screen px)
   FIT_PADDING: 48,
   // Pointer movement (px) before a press becomes a drag
   DRAG_THRESHOLD: 4,
+  // Max time between two presses of a double press (ms)
+  DOUBLE_TAP_MS: 350,
   // Pasted pictures: longest side kept (px) and widest size placed on the map (world px)
   IMAGE_MAX_PX: 1600,
   IMAGE_QUALITY: 0.85,

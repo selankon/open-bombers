@@ -34,7 +34,8 @@ import {
   newId,
   rootOf,
   growSide,
-  setAmple,
+  setBoxSize,
+  BoxSize,
   setBranchColor,
   subtreeIds,
   toWorld,
@@ -344,22 +345,25 @@ export const MapaEditor = ({ mapa }: { mapa: MapaMental }) => {
     patch(onNodes((ns) => setBranchColor(ns, selectedId, c)))
   })
   const endColorPreview = useStable(() => (pickingColor.current = false))
-  const previewWidth = useStable((w: number) => {
+  // Size sliders: wider boxes grow away from the parent, taller ones on both sides
+  const previewBox = useStable((size: BoxSize) => {
     if (!selectedId) return
+    const node = map[selectedId]
+    if (!node) return
     if (!pickingColor.current) {
       pickingColor.current = true
       checkpoint()
     }
-    const node = map[selectedId]
-    if (!node) return
-    // Grow away from the parent, like with the handle
-    const current = node.ample ?? sizesRef.current[node.id]?.w ?? w
-    const x = node.x + ((w - current) / 2) * growSide(map, node.id)
-    patch(onNodes((ns) => setAmple(ns, node.id, w, x)))
+    const measured = sizesRef.current[node.id]
+    const x =
+      size.ample === undefined
+        ? node.x
+        : node.x + ((size.ample - (node.ample ?? measured?.w ?? size.ample)) / 2) * growSide(map, node.id)
+    patch(onNodes((ns) => setBoxSize(ns, node.id, size, { x, y: node.y })))
   })
-  const setWidth = useStable((w: number | undefined) => {
+  const resetBox = useStable(() => {
     pickingColor.current = false
-    if (selectedId) apply(onNodes((ns) => setAmple(ns, selectedId, w)))
+    if (selectedId) apply(onNodes((ns) => setBoxSize(ns, selectedId, null)))
   })
 
   const setNodeStyle = useStable((p: Partial<Pick<MapaNode, 'forma' | 'emplenat' | 'mida'>>) => {
@@ -411,9 +415,9 @@ export const MapaEditor = ({ mapa }: { mapa: MapaMental }) => {
   const onItemDragStart = useStable(() => checkpoint())
   const onItemDragMove = useStable((ref: ItemRef, dx: number, dy: number) => patch((c) => moveItem(c, ref, dx, dy)))
   const onResize = useStable((id: string, w: number, h: number) => patch((c) => resizeImatge(c, id, w, h)))
-  // Dragging the width handle patches (after onResizeStart's checkpoint); a double click resets it as one step
-  const onNodeWidth = useStable((id: string, w: number | undefined, x?: number) =>
-    (w === undefined ? apply : patch)(onNodes((ns) => setAmple(ns, id, w, x)))
+  // Dragging a corner patches (after onResizeStart's checkpoint); a double click resets the size as one step
+  const onNodeBox = useStable((id: string, size: BoxSize | null, at?: { x: number; y: number }) =>
+    (size ? patch : apply)(onNodes((ns) => setBoxSize(ns, id, size, at)))
   )
 
   const onBackgroundDoubleClick = useStable((x: number, y: number) => {
@@ -639,7 +643,7 @@ export const MapaEditor = ({ mapa }: { mapa: MapaMental }) => {
         onItemDragMove={onItemDragMove}
         onResizeStart={checkpoint}
         onResize={onResize}
-        onNodeWidth={onNodeWidth}
+        onNodeBox={onNodeBox}
         onToggleFold={toggleFold}
         onBackgroundDoubleClick={onBackgroundDoubleClick}
         onCommit={commit}
@@ -721,8 +725,9 @@ export const MapaEditor = ({ mapa }: { mapa: MapaMental }) => {
               onColorPreview={previewColor}
               onColorPreviewEnd={endColorPreview}
               width={selected.ample ?? sizes[selected.id]?.w ?? MAPA.NODE_W}
-              onWidth={setWidth}
-              onWidthPreview={previewWidth}
+              height={selected.alt ?? sizes[selected.id]?.h ?? MAPA.NODE_H}
+              onBoxReset={resetBox}
+              onBoxPreview={previewBox}
               onNode={setNodeStyle}
               onBranca={(p) => setBranca(selected.id, p)}
               onEditLabel={() => editLabel(selected.id)}

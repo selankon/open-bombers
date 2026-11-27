@@ -3,7 +3,7 @@ import { colorLook } from '../colors'
 import { absPoints, contentBounds, sizeOf, visibleTraces } from '../content'
 import { edgeGeometry, formaPaths } from '../geometry'
 import { HIGHLIGHTER_OPACITY, strokePath } from '../ink'
-import { byId, colorOf, depthOf, visibleNodes } from '../logic'
+import { byId, colorOf, depthOf, maxLines, visibleNodes } from '../logic'
 import { LINE_HEIGHT, nodeLook, nodeRadius } from '../nodeLook'
 import { MapaContingut, MapaTrace, NodeSizes } from '../types'
 import { ColorResolver } from './colors'
@@ -161,8 +161,16 @@ export const renderMapa = async (c: MapaContingut, sizes: NodeSizes, { resolve, 
     ctx.fillStyle = resolve(look.text)
     // The box is as wide as the text on screen: a little slack absorbs font metric differences
     const inner = w - look.padX * 2 - look.borderPx * 2
-    const lines = wrap(ctx, n.text, inner * 1.06 + 2)
+    const maxW = inner * 1.06 + 2
+    let lines = wrap(ctx, n.text, maxW)
     const lh = look.fontPx * LINE_HEIGHT
+    // A box with a hand-set height cuts the text with "…", like on screen
+    const max = maxLines(n.alt, look.padY, look.borderPx, lh)
+    if (max && lines.length > max) {
+      let last = lines[max - 1]
+      while (last && ctx.measureText(`${last}…`).width > maxW) last = last.slice(0, -1)
+      lines = [...lines.slice(0, max - 1), `${last.trimEnd()}…`]
+    }
     const top = n.y - (lines.length * lh) / 2
     lines.forEach((s, i) => ctx.fillText(s, n.x, top + lh * (i + 0.5)))
   }

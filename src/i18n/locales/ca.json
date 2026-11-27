@@ -291,7 +291,7 @@
     "new": "Nou mapa",
     "new_title": "Nou mapa mental",
     "node_placeholder": "Nova idea",
-    "node_resize": "Arrossega per canviar l’amplada (doble clic: automàtica)",
+    "node_resize": "Arrossega per canviar la mida (doble clic: automàtica)",
     "not_found_desc": "Potser s’ha eliminat o és d’un altre dispositiu. Els teus mapes són a la llista.",
     "not_found_title": "No trobem aquest mapa",
     "open_apartat_one": "Mapes mentals de l’apartat ({{count}})",
@@ -318,6 +318,9 @@
     "style": {
       "add_line_text": "Escriu sobre la línia",
       "arrow": "Punta de fletxa",
+      "box_height": "Alçada",
+      "box_size": "Mida de la caixa",
+      "box_width": "Amplada",
       "circle": "Cercle",
       "color": "Color de la branca",
       "curve": "Corba",
@@ -347,7 +350,6 @@
       "straight": "Recta",
       "text_only": "Només text",
       "transparent": "Transparent",
-      "width": "Amplada de la caixa",
       "width_auto": "Automàtica",
       "width_n": "Gruix {{n}}"
     },

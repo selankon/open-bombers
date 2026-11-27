@@ -13,7 +13,7 @@ import {
 import { useTranslation } from 'react-i18next'
 import { MAPA } from '~utils/constants'
 import { visibleTraces } from '../content'
-import { byId, canReparent, childrenOf, colorOf, toWorld, visibleNodes } from '../logic'
+import { BoxSize, byId, canReparent, childrenOf, colorOf, toWorld, visibleNodes } from '../logic'
 import { FormaTipus, ItemRef, MapaColor, MapaContingut, MapaForma, NodeSizes, Tool, Viewport } from '../types'
 import { Draft, DraftLayer, FormesLayer, ImatgesLayer, TracesLayer } from './Drawings'
 import { EdgeLabels } from './EdgeLabels'
@@ -28,7 +28,19 @@ type Gesture =
   | { type: 'node'; id: string; last: Pt; start: Pt; moved: boolean }
   | { type: 'item'; ref: ItemRef; last: Pt; start: Pt; moved: boolean }
   | { type: 'resize'; id: string; start: Pt; w: number; h: number; started: boolean }
-  | { type: 'width'; id: string; dir: 1 | -1; start: Pt; w: number; x: number; started: boolean }
+  | {
+      type: 'box'
+      id: string
+      sx: 1 | -1
+      sy: 1 | -1
+      start: Pt
+      w: number
+      h: number
+      at: Pt
+      // Sides really moved: dragging only sideways keeps the automatic height
+      dx: boolean
+      dy: boolean
+    }
   | { type: 'draw'; punts: [number, number, number][]; pressio: boolean }
   | { type: 'shape'; from: Pt; to: Pt }
   | { type: 'erase' }
@@ -64,7 +76,7 @@ type CanvasProps = {
   onItemDragMove: (ref: ItemRef, dx: number, dy: number) => void
   onResizeStart: () => void
   onResize: (id: string, w: number, h: number) => void
-  onNodeWidth: (id: string, w: number | undefined, x?: number) => void
+  onNodeBox: (id: string, size: BoxSize | null, at?: { x: number; y: number }) => void
   onToggleFold: (id: string) => void
   onBackgroundDoubleClick: (x: number, y: number) => void
   onCommit: (id: string, text: string, next?: 'child' | 'sibling') => void
@@ -206,17 +218,37 @@ export const Canvas = forwardRef<CanvasHandle, CanvasProps>((props, ref) => {
     gesture.current = { type: 'resize', id, start: world(e), w: img.w, h: img.h, started: false }
   }, [])
 
-  // Width handle of the selected idea: the opposite side of the box stays still
-  const onWidthPointerDown = useCallback((id: string, dir: 1 | -1, e: PointerEvent) => {
+  // Corner of an idea: resizes the box keeping the opposite corner still. A double press gives back the
+  // automatic size (detected here: the pointer capture sends the dblclick event to the canvas).
+  const lastCorner = useRef<{ id: string; time: number } | null>(null)
+  const onBoxPointerDown = useCallback((id: string, sx: 1 | -1, sy: 1 | -1, e: PointerEvent) => {
     if (e.button !== 0) return
+    const P = propsRef.current
+    const last = lastCorner.current
+    if (last?.id === id && e.timeStamp - last.time < MAPA.DOUBLE_TAP_MS) {
+      lastCorner.current = null
+      e.preventDefault()
+      return P.onNodeBox(id, null)
+    }
+    lastCorner.current = { id, time: e.timeStamp }
     grab(e)
-    const node = propsRef.current.content.nodes.find((n) => n.id === id)
+    const node = P.content.nodes.find((n) => n.id === id)
     if (!node) return
-    const w = node.ample ?? propsRef.current.sizes[id]?.w ?? MAPA.NODE_W
-    gesture.current = { type: 'width', id, dir, start: world(e), w, x: node.x, started: false }
+    if (P.selectedId !== id) P.onSelect(id)
+    const size = P.sizes[id]
+    gesture.current = {
+      type: 'box',
+      id,
+      sx,
+      sy,
+      start: world(e),
+      w: node.ample ?? size?.w ?? MAPA.NODE_W,
+      h: node.alt ?? size?.h ?? MAPA.NODE_H,
+      at: { x: node.x, y: node.y },
+      dx: false,
+      dy: false,
+    }
   }, [])
-
-  const onResetWidth = useCallback((id: string) => propsRef.current.onNodeWidth(id, undefined), [])
 
   const onSelectEdge = useCallback((id: string) => {
     el.current?.focus({ preventScroll: true })
@@ -280,14 +312,23 @@ export const Canvas = forwardRef<CanvasHandle, CanvasProps>((props, ref) => {
         P.onResize(g.id, nw, (nw * g.h) / g.w)
         return
       }
-      case 'width': {
-        if (!g.started) {
-          g.started = true
-          P.onResizeStart()
-        }
-        const raw = g.w + (world(e).x - g.start.x) * g.dir
-        const nw = Math.round(Math.min(MAPA.NODE_AMPLE_MAX, Math.max(MAPA.NODE_AMPLE_MIN, raw)))
-        P.onNodeWidth(g.id, nw, g.x + ((nw - g.w) / 2) * g.dir)
+      case 'box': {
+        const w = world(e)
+        const mx = w.x - g.start.x
+        const my = w.y - g.start.y
+        const min = MAPA.DRAG_THRESHOLD / vpRef.current.k
+        if (!g.dx && !g.dy && Math.max(Math.abs(mx), Math.abs(my)) < min) return
+        if (!g.dx && !g.dy) P.onResizeStart()
+        g.dx ||= Math.abs(mx) >= min
+        g.dy ||= Math.abs(my) >= min
+        const clamp = (v: number, lo: number, hi: number) => Math.round(Math.min(hi, Math.max(lo, v)))
+        const nw = g.dx ? clamp(g.w + mx * g.sx, MAPA.NODE_AMPLE_MIN, MAPA.NODE_AMPLE_MAX) : g.w
+        const nh = g.dy ? clamp(g.h + my * g.sy, MAPA.NODE_ALT_MIN, MAPA.NODE_ALT_MAX) : g.h
+        P.onNodeBox(
+          g.id,
+          { ...(g.dx ? { ample: nw } : {}), ...(g.dy ? { alt: nh } : {}) },
+          { x: g.at.x + ((nw - g.w) / 2) * g.sx, y: g.at.y + ((nh - g.h) / 2) * g.sy }
+        )
         return
       }
       case 'draw': {
@@ -449,8 +490,7 @@ export const Canvas = forwardRef<CanvasHandle, CanvasProps>((props, ref) => {
               onDoubleClick={onEdit}
               onToggleFold={onToggleFold}
               onSize={onSize}
-              onResizePointerDown={onWidthPointerDown}
-              onResetWidth={onResetWidth}
+              onResizePointerDown={onBoxPointerDown}
               initialDraft={n.id === editingId ? editDraft : null}
               onCommit={onCommit}
               onCancel={onCancel}
@@ -492,8 +532,7 @@ export const Canvas = forwardRef<CanvasHandle, CanvasProps>((props, ref) => {
     onNodePointerDown,
     onItemPointerDown,
     onResizePointerDown,
-    onWidthPointerDown,
-    onResetWidth,
+    onBoxPointerDown,
     onSelectEdge,
     onEdit,
     onToggleFold,
