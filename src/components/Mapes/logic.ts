@@ -220,14 +220,6 @@ export const setBoxSize = (nodes: MapaNode[], id: string, size: BoxSize | null, 
 export const maxLines = (alt: number | undefined, padY: number, borderPx: number, lineH: number) =>
   alt ? Math.max(1, Math.floor((alt - padY * 2 - borderPx * 2 + 1) / lineH)) : null
 
-/** Side an idea grows to when it gets wider, so the side facing its parent stays still (0: both) */
-export const growSide = (map: Record<string, MapaNode>, id: string): 1 | -1 | 0 => {
-  const n = map[id]
-  const parent = n?.pare ? map[n.pare] : undefined
-  if (!n || !parent) return 0
-  return n.x >= parent.x ? 1 : -1
-}
-
 /** Root of the tree that holds a node */
 export const rootOf = (map: Record<string, MapaNode>, id: string): MapaNode | undefined => {
   let n: MapaNode | undefined = map[id]

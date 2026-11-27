@@ -33,7 +33,6 @@ import {
   neighbour,
   newId,
   rootOf,
-  growSide,
   setBoxSize,
   BoxSize,
   setBranchColor,
@@ -330,7 +329,7 @@ export const MapaEditor = ({ mapa }: { mapa: MapaMental }) => {
     if (node) apply(onNodes((ns) => updateNode(ns, id, { plegat: !node.plegat })))
   })
 
-  // Dragging in the color picker or a slider of the style panel: the whole drag is a single undo step
+  // Dragging in the color picker or the opacity slider: the whole drag is a single undo step
   const pickingColor = useRef(false)
   const setColor = useStable((c: NodeColor) => {
     pickingColor.current = false
@@ -345,27 +344,6 @@ export const MapaEditor = ({ mapa }: { mapa: MapaMental }) => {
     patch(onNodes((ns) => setBranchColor(ns, selectedId, c)))
   })
   const endColorPreview = useStable(() => (pickingColor.current = false))
-  // Size sliders: wider boxes grow away from the parent, taller ones on both sides
-  const previewBox = useStable((size: BoxSize) => {
-    if (!selectedId) return
-    const node = map[selectedId]
-    if (!node) return
-    if (!pickingColor.current) {
-      pickingColor.current = true
-      checkpoint()
-    }
-    const measured = sizesRef.current[node.id]
-    const x =
-      size.ample === undefined
-        ? node.x
-        : node.x + ((size.ample - (node.ample ?? measured?.w ?? size.ample)) / 2) * growSide(map, node.id)
-    patch(onNodes((ns) => setBoxSize(ns, node.id, size, { x, y: node.y })))
-  })
-  const resetBox = useStable(() => {
-    pickingColor.current = false
-    if (selectedId) apply(onNodes((ns) => setBoxSize(ns, selectedId, null)))
-  })
-
   const setNodeStyle = useStable((p: Partial<Pick<MapaNode, 'forma' | 'emplenat' | 'mida'>>) => {
     if (selectedId) apply(onNodes((ns) => updateNode(ns, selectedId, p)))
   })
@@ -724,10 +702,6 @@ export const MapaEditor = ({ mapa }: { mapa: MapaMental }) => {
               onColor={setColor}
               onColorPreview={previewColor}
               onColorPreviewEnd={endColorPreview}
-              width={selected.ample ?? sizes[selected.id]?.w ?? MAPA.NODE_W}
-              height={selected.alt ?? sizes[selected.id]?.h ?? MAPA.NODE_H}
-              onBoxReset={resetBox}
-              onBoxPreview={previewBox}
               onNode={setNodeStyle}
               onBranca={(p) => setBranca(selected.id, p)}
               onEditLabel={() => editLabel(selected.id)}
