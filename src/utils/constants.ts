@@ -79,6 +79,8 @@ export const MAPA = {
   ZOOM_MAX: 2.5,
   // Zoom step of the +/- buttons and keyboard
   ZOOM_STEP: 1.2,
+  // Zoom of one mouse wheel notch
+  WHEEL_ZOOM_STEP: 1.15,
   // Opening a map never starts below this zoom (small screens center the main idea instead)
   READABLE_ZOOM: 0.6,
   // Spacing of the background dots (world px) and their minimum on screen

@@ -5,7 +5,16 @@ import { Viewport } from '../types'
 
 /**
  * Pan / zoom state of the canvas: size tracking and wheel / trackpad gestures.
- * Plain wheel pans, ctrl/cmd + wheel (and trackpad pinch, which the browser reports the same way) zooms.
+ * A mouse wheel zooms (with Shift it pans). A trackpad pans with two fingers and zooms with a pinch
+ * (the browser reports it as ctrl + wheel), like ctrl/cmd + wheel.
+ */
+
+// Mouse wheels move in whole notches (lines, or big integer pixel steps, vertical only); trackpads send
+// small and fractional deltas, often with some horizontal movement
+const isMouseWheel = (e: WheelEvent) =>
+  e.deltaMode !== 0 || (e.deltaX === 0 && Number.isInteger(e.deltaY) && Math.abs(e.deltaY) >= 50)
+
+/**
  */
 export const useViewport = (ref: RefObject<HTMLElement>) => {
   const [vp, setVp] = useState<Viewport>({ x: 0, y: 0, k: 1 })
@@ -33,9 +42,13 @@ export const useViewport = (ref: RefObject<HTMLElement>) => {
       const rect = el.getBoundingClientRect()
       // Lines / pages to pixels
       const unit = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? rect.height : 1
+      const at = { x: e.clientX - rect.left, y: e.clientY - rect.top }
       if (e.ctrlKey || e.metaKey) {
         const factor = Math.exp(-e.deltaY * unit * 0.01)
-        setVp((v) => zoomAt(v, factor, e.clientX - rect.left, e.clientY - rect.top))
+        setVp((v) => zoomAt(v, factor, at.x, at.y))
+      } else if (isMouseWheel(e) && !e.shiftKey) {
+        const factor = MAPA.WHEEL_ZOOM_STEP ** -Math.sign(e.deltaY)
+        setVp((v) => zoomAt(v, factor, at.x, at.y))
       } else {
         setVp((v) => ({ ...v, x: v.x - e.deltaX * unit, y: v.y - e.deltaY * unit }))
       }
