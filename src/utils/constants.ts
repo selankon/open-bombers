@@ -90,6 +90,10 @@ export const MAPA = {
   // Approximate node box used to avoid overlaps and to fit the view
   NODE_W: 180,
   NODE_H: 48,
+  // Width limits of an idea resized by hand (world px) and the step of its slider
+  NODE_AMPLE_MIN: 64,
+  NODE_AMPLE_MAX: 800,
+  NODE_AMPLE_STEP: 10,
   // Padding around the content when fitting the view (screen px)
   FIT_PADDING: 48,
   // Pointer movement (px) before a press becomes a drag

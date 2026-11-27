@@ -50,6 +50,8 @@ export interface MapaNode {
   forma?: NodeForma
   emplenat?: NodeEmplenat
   mida?: NodeMida
+  // Width of the box set by hand (world px): longer lines of text. Missing: it follows the text.
+  ample?: number
   // Line that joins the node with its parent
   branca?: BrancaStyle
 }

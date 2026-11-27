@@ -33,6 +33,8 @@ import {
   neighbour,
   newId,
   rootOf,
+  growSide,
+  setAmple,
   setBranchColor,
   subtreeIds,
   toWorld,
@@ -327,7 +329,7 @@ export const MapaEditor = ({ mapa }: { mapa: MapaMental }) => {
     if (node) apply(onNodes((ns) => updateNode(ns, id, { plegat: !node.plegat })))
   })
 
-  // Dragging in the color picker: the whole drag is a single undo step
+  // Dragging in the color picker or a slider of the style panel: the whole drag is a single undo step
   const pickingColor = useRef(false)
   const setColor = useStable((c: NodeColor) => {
     pickingColor.current = false
@@ -342,6 +344,23 @@ export const MapaEditor = ({ mapa }: { mapa: MapaMental }) => {
     patch(onNodes((ns) => setBranchColor(ns, selectedId, c)))
   })
   const endColorPreview = useStable(() => (pickingColor.current = false))
+  const previewWidth = useStable((w: number) => {
+    if (!selectedId) return
+    if (!pickingColor.current) {
+      pickingColor.current = true
+      checkpoint()
+    }
+    const node = map[selectedId]
+    if (!node) return
+    // Grow away from the parent, like with the handle
+    const current = node.ample ?? sizesRef.current[node.id]?.w ?? w
+    const x = node.x + ((w - current) / 2) * growSide(map, node.id)
+    patch(onNodes((ns) => setAmple(ns, node.id, w, x)))
+  })
+  const setWidth = useStable((w: number | undefined) => {
+    pickingColor.current = false
+    if (selectedId) apply(onNodes((ns) => setAmple(ns, selectedId, w)))
+  })
 
   const setNodeStyle = useStable((p: Partial<Pick<MapaNode, 'forma' | 'emplenat' | 'mida'>>) => {
     if (selectedId) apply(onNodes((ns) => updateNode(ns, selectedId, p)))
@@ -392,6 +411,10 @@ export const MapaEditor = ({ mapa }: { mapa: MapaMental }) => {
   const onItemDragStart = useStable(() => checkpoint())
   const onItemDragMove = useStable((ref: ItemRef, dx: number, dy: number) => patch((c) => moveItem(c, ref, dx, dy)))
   const onResize = useStable((id: string, w: number, h: number) => patch((c) => resizeImatge(c, id, w, h)))
+  // Dragging the width handle patches (after onResizeStart's checkpoint); a double click resets it as one step
+  const onNodeWidth = useStable((id: string, w: number | undefined, x?: number) =>
+    (w === undefined ? apply : patch)(onNodes((ns) => setAmple(ns, id, w, x)))
+  )
 
   const onBackgroundDoubleClick = useStable((x: number, y: number) => {
     const id = newId()
@@ -616,6 +639,7 @@ export const MapaEditor = ({ mapa }: { mapa: MapaMental }) => {
         onItemDragMove={onItemDragMove}
         onResizeStart={checkpoint}
         onResize={onResize}
+        onNodeWidth={onNodeWidth}
         onToggleFold={toggleFold}
         onBackgroundDoubleClick={onBackgroundDoubleClick}
         onCommit={commit}
@@ -696,6 +720,9 @@ export const MapaEditor = ({ mapa }: { mapa: MapaMental }) => {
               onColor={setColor}
               onColorPreview={previewColor}
               onColorPreviewEnd={endColorPreview}
+              width={selected.ample ?? sizes[selected.id]?.w ?? MAPA.NODE_W}
+              onWidth={setWidth}
+              onWidthPreview={previewWidth}
               onNode={setNodeStyle}
               onBranca={(p) => setBranca(selected.id, p)}
               onEditLabel={() => editLabel(selected.id)}

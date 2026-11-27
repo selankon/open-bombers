@@ -28,6 +28,9 @@ type NodeViewProps = {
   onDoubleClick: (id: string) => void
   onToggleFold: (id: string) => void
   onSize: (id: string, w: number, h: number) => void
+  // Drag of the width handle (dir: side of the handle) and reset with a double click
+  onResizePointerDown: (id: string, dir: 1 | -1, e: PointerEvent) => void
+  onResetWidth: (id: string) => void
   // Text when editing started from a typed key (replaces the current text)
   initialDraft: string | null
   onCommit: (id: string, text: string, next?: 'child' | 'sibling') => void
@@ -54,6 +57,8 @@ export const NodeView = memo(
     onDoubleClick,
     onToggleFold,
     onSize,
+    onResizePointerDown,
+    onResetWidth,
     initialDraft,
     onCommit,
     onCancel,
@@ -109,6 +114,8 @@ export const NodeView = memo(
     const line = cssColor(c.line)
     const strong = cssColor(c.strong)
     const folded = !!node.plegat && childCount > 0
+    // The width handle goes on the side without the fold toggle
+    const handleSide: 1 | -1 = childCount > 0 ? (side > 0 ? -1 : 1) : 1
     const round = look.forma === 'cercle'
     const radius =
       look.forma === 'cercle'
@@ -155,9 +162,9 @@ export const NodeView = memo(
           position='relative'
           align='center'
           justify='center'
-          w='max-content'
           minW={`${look.minW}px`}
-          maxW={`${look.maxW + look.padX * 2}px`}
+          maxW={node.ample ? undefined : `${look.maxW + look.padX * 2}px`}
+          w={node.ample ? `${node.ample}px` : 'max-content'}
           // A circle is as tall as it is wide (it grows into an ellipse with long texts)
           sx={{ aspectRatio: round ? '1' : undefined, touchAction: 'none' }}
           px={`${look.padX}px`}
@@ -210,6 +217,40 @@ export const NodeView = memo(
               color={look.text}
               _placeholder={{ color: look.text, opacity: 0.6 }}
             />
+          )}
+          {isSelected && !isEditing && interactive && (
+            <Box
+              role='separator'
+              aria-orientation='vertical'
+              aria-label={t('mapes.node_resize', {
+                defaultValue: 'Arrossega per canviar l’amplada (doble clic: automàtica)',
+              })}
+              title={t('mapes.node_resize', {
+                defaultValue: 'Arrossega per canviar l’amplada (doble clic: automàtica)',
+              })}
+              onPointerDown={(e: PointerEvent) => {
+                e.stopPropagation()
+                onResizePointerDown(node.id, handleSide, e)
+              }}
+              onDoubleClick={(e: MouseEvent) => {
+                e.stopPropagation()
+                onResetWidth(node.id)
+              }}
+              position='absolute'
+              top='50%'
+              {...(handleSide > 0 ? { right: 0 } : { left: 0 })}
+              transform={`translate(${handleSide > 0 ? '50%' : '-50%'}, -50%)`}
+              // Big invisible hit area around a slim visible grip
+              w={5}
+              h={8}
+              display='flex'
+              alignItems='center'
+              justifyContent='center'
+              cursor='ew-resize'
+              sx={{ touchAction: 'none' }}
+            >
+              <Box w='6px' h={5} borderRadius='full' bg='surface' borderWidth='1.5px' borderColor={strong} />
+            </Box>
           )}
           {childCount > 0 && (folded || isSelected) && !isEditing && interactive && (
             <Flex

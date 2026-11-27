@@ -291,6 +291,7 @@
     "new": "Nou mapa",
     "new_title": "Nou mapa mental",
     "node_placeholder": "Nova idea",
+    "node_resize": "Arrossega per canviar l’amplada (doble clic: automàtica)",
     "not_found_desc": "Potser s’ha eliminat o és d’un altre dispositiu. Els teus mapes són a la llista.",
     "not_found_title": "No trobem aquest mapa",
     "open_apartat_one": "Mapes mentals de l’apartat ({{count}})",
@@ -346,6 +347,8 @@
       "straight": "Recta",
       "text_only": "Només text",
       "transparent": "Transparent",
+      "width": "Amplada de la caixa",
+      "width_auto": "Automàtica",
       "width_n": "Gruix {{n}}"
     },
     "subtitle": "Resumeix cada tema amb idees i branques. Funciona amb teclat, ratolí i pantalla tàctil.",

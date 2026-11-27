@@ -64,6 +64,9 @@ const migrateNode = (n: any): MapaNode => {
     ...(oneOf(NODE_FORMES, n.forma) ? { forma: n.forma } : {}),
     ...(oneOf(NODE_EMPLENATS, n.emplenat) ? { emplenat: n.emplenat } : {}),
     ...(oneOf(NODE_MIDES, n.mida) ? { mida: n.mida } : {}),
+    ...(Number(n.ample) > 0
+      ? { ample: Math.round(Math.min(MAPA.NODE_AMPLE_MAX, Math.max(MAPA.NODE_AMPLE_MIN, Number(n.ample)))) }
+      : {}),
     ...(branca ? { branca } : {}),
   }
 }
@@ -189,6 +192,24 @@ export const colorOf = (map: Record<string, MapaNode>, id: string): NodeColor =>
     n = n.pare ? map[n.pare] : undefined
   }
   return 'primari'
+}
+
+/** Sets (or clears, with undefined) the hand-set width of an idea, optionally moving its center */
+export const setAmple = (nodes: MapaNode[], id: string, ample: number | undefined, x?: number) =>
+  nodes.map((n) => {
+    if (n.id !== id || (n.ample === ample && (x === undefined || n.x === x))) return n
+    const moved = x === undefined ? n : { ...n, x }
+    if (ample !== undefined) return { ...moved, ample }
+    const { ample: _drop, ...rest } = moved
+    return rest
+  })
+
+/** Side an idea grows to when it gets wider, so the side facing its parent stays still (0: both) */
+export const growSide = (map: Record<string, MapaNode>, id: string): 1 | -1 | 0 => {
+  const n = map[id]
+  const parent = n?.pare ? map[n.pare] : undefined
+  if (!n || !parent) return 0
+  return n.x >= parent.x ? 1 : -1
 }
 
 /** Root of the tree that holds a node */

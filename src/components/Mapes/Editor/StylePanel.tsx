@@ -329,6 +329,10 @@ type StylePanelProps = {
   onColor: (c: NodeColor) => void
   onColorPreview: (c: NodeColor) => void
   onColorPreviewEnd: () => void
+  // Current width of the box (hand-set or measured)
+  width: number
+  onWidth: (w: number | undefined) => void
+  onWidthPreview: (w: number) => void
   onNode: (patch: Partial<Pick<MapaNode, 'forma' | 'emplenat' | 'mida'>>) => void
   onBranca: (patch: Partial<BrancaStyle>) => void
   onEditLabel: () => void
@@ -344,6 +348,9 @@ export const StylePanel = ({
   onColor,
   onColorPreview,
   onColorPreviewEnd,
+  width,
+  onWidth,
+  onWidthPreview,
   onNode,
   onBranca,
   onEditLabel,
@@ -429,6 +436,41 @@ export const StylePanel = ({
           </SimpleGrid>
         </Section>
       </Flex>
+
+      <Section title={t('mapes.style.width', { defaultValue: 'Amplada de la caixa' })}>
+        <Flex align='center' gap={3}>
+          <Button
+            aria-pressed={!node.ample}
+            onClick={() => onWidth(undefined)}
+            variant='outline'
+            colorScheme='gray'
+            borderRadius='sm'
+            borderColor={!node.ample ? 'accent' : 'border'}
+            borderWidth={!node.ample ? '2px' : '1px'}
+            bg={!node.ample ? 'mapa.primari.bg' : 'surface'}
+            h={10}
+            flexShrink={0}
+          >
+            {t('mapes.style.width_auto', { defaultValue: 'Automàtica' })}
+          </Button>
+          <Slider
+            aria-label={t('mapes.style.width', { defaultValue: 'Amplada de la caixa' })}
+            min={MAPA.NODE_AMPLE_MIN}
+            max={MAPA.NODE_AMPLE_MAX}
+            step={MAPA.NODE_AMPLE_STEP}
+            value={Math.round(width)}
+            onChange={onWidthPreview}
+            onChangeEnd={onColorPreviewEnd}
+            colorScheme='primary'
+            focusThumbOnChange={false}
+          >
+            <SliderTrack>
+              <SliderFilledTrack />
+            </SliderTrack>
+            <SliderThumb />
+          </Slider>
+        </Flex>
+      </Section>
 
       {!isRoot && (
         <>
