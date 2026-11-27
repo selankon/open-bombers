@@ -111,6 +111,14 @@ export interface MapaMental extends MapaContingut {
   modificat: string
 }
 
+// A single map saved as a file to share it (".mapa.json")
+export interface MapaFile {
+  format: string
+  version: number
+  exported_at: string
+  mapa: MapaMental
+}
+
 // What the list needs from every map
 export interface MapaResum {
   id: string

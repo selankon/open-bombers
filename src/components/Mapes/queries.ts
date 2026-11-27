@@ -1,7 +1,7 @@
 import { QueryClient, useMutation, UseMutationOptions, useQuery, useQueryClient } from '@tanstack/react-query'
 import api from '~src/services/api'
 import { resumOf } from './logic'
-import { MapaInfoParams, MapaMental, MapaResum, NouMapaParams, SaveContentParams } from './types'
+import { MapaFile, MapaInfoParams, MapaMental, MapaResum, NouMapaParams, SaveContentParams } from './types'
 
 export const MapesKeys = {
   all: ['mapes'],
@@ -78,6 +78,23 @@ export const useRemoveMapa = (options?: Options<string, string>) => {
       queryClient.removeQueries({ queryKey: MapesKeys.detail(id) })
       queryClient.setQueryData<MapaResum[]>(MapesKeys.list, (prev) => prev?.filter((m) => m.id !== id))
     },
+    ...options,
+  })
+}
+
+// One map as a shareable file (read only, nothing to store)
+export const useExportMapaFile = (options?: Options<MapaFile, string>) =>
+  useMutation({
+    mutationFn: (id: string) => api.mapes.exportFile(id),
+    ...options,
+  })
+
+// Adds a shared map as a new one
+export const useImportMapaFile = (options?: Options<MapaMental, unknown>) => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (file: unknown) => api.mapes.importFile(file),
+    onSuccess: (mapa) => storeMapa(queryClient, mapa),
     ...options,
   })
 }

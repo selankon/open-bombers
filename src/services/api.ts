@@ -24,12 +24,19 @@ import { BackupFile } from '~components/Backup/types'
 import { pdfById, pdfUrl } from '~components/Temari/logic'
 import { ALL_TEMARI_PDFS } from '~src/data/temari-pdfs'
 import { TemariBatchResult, TemariPdf, TemariProgress } from '~components/Temari/types'
-import { BACKUP_VERSION, IDB_STORES, STORAGE_KEYS, TEMARI_CACHE_NAME } from '~utils/constants'
+import {
+  BACKUP_VERSION,
+  IDB_STORES,
+  MAPA_FILE_FORMAT,
+  MAPA_FILE_VERSION,
+  STORAGE_KEYS,
+  TEMARI_CACHE_NAME,
+} from '~utils/constants'
 import { DayString, IsoDay, isoDayOf, today, weekIdOf, WeekId } from '~utils/dates'
 import { getSlices, readSlice, registerSlice, removeSlice, writeSlice } from './storage'
 import { db } from './db'
 import { migrateMapa, newId, resumOf } from '~components/Mapes/logic'
-import { MapaInfoParams, MapaMental, NouMapaParams, SaveContentParams } from '~components/Mapes/types'
+import { MapaFile, MapaInfoParams, MapaMental, NouMapaParams, SaveContentParams } from '~components/Mapes/types'
 import { countPagines, migrateAnotacions } from '~components/Anotacions/logic'
 import { AnotacionsResum, PdfAnotacions, SaveAnotacionsParams } from '~components/Anotacions/types'
 
@@ -384,6 +391,34 @@ export const mapes = {
   remove: async (id: string) => {
     await db.delete(IDB_STORES.MAPES, id)
     return id
+  },
+  // One map as a file to share it
+  exportFile: async (id: string): Promise<MapaFile> => ({
+    format: MAPA_FILE_FORMAT,
+    version: MAPA_FILE_VERSION,
+    exported_at: now(),
+    mapa: await getMapa(id),
+  }),
+  // Adds a shared map as a new one (the maps already on this device are kept)
+  importFile: async (file: unknown) => {
+    const f = file as Partial<MapaFile> | null
+    if (!f || f.format !== MAPA_FILE_FORMAT || typeof f.version !== 'number' || !Array.isArray(f.mapa?.nodes)) {
+      throw new ApiError('invalid map file')
+    }
+    if (f.version > MAPA_FILE_VERSION) throw new ApiError('map file from a newer version')
+    const mapa = migrateMapa(f.mapa)
+    // Keep the link to the temari only if this device has the same tema / apartat
+    const tema = readSlice(structureSlice).temes.find((tm) => tm.id === mapa.tema_id)
+    const rowOk = !!tema && !!mapa.row_id && tema.apartats.some((a) => a.row_id === mapa.row_id)
+    const t = now()
+    return db.put(IDB_STORES.MAPES, {
+      ...mapa,
+      id: newId(),
+      tema_id: tema ? tema.id : null,
+      row_id: rowOk ? mapa.row_id : null,
+      creat: t,
+      modificat: t,
+    })
   },
 }
 

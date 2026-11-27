@@ -155,7 +155,7 @@ export const EditorHeader = ({ mapa, onBeforeLeave, onBeforeRemove, onExport, ex
         )}
         <MapaActionsMenu
           mapa={mapa}
-          onBeforeDuplicate={onBeforeLeave}
+          onSavePending={onBeforeLeave}
           onBeforeRemove={onBeforeRemove}
           onExport={onExport}
           exporting={exporting}
