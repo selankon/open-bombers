@@ -17,15 +17,17 @@ import { useNavigate } from 'react-router-dom'
 import { ConfirmDialog } from '~components/Layout/ConfirmDialog'
 import { mapaPath } from '~src/router/routes'
 import { icons } from '~theme/icons'
+import { canShareFiles } from '~utils/download'
 import { ExportKind } from './export/useExportMapa'
+import { MapaFileAction, useMapaFile } from './export/useMapaFile'
 import { MapaFormModal } from './MapaFormModal'
 import { useDuplicateMapa, useRemoveMapa, useSaveMapaInfo } from './queries'
 import { MapaResum } from './types'
 
 type MapaActionsMenuProps = {
   mapa: Pick<MapaResum, 'id' | 'titol' | 'tema_id' | 'row_id'>
-  // Runs before duplicating (the editor saves pending changes first)
-  onBeforeDuplicate?: () => Promise<unknown> | void
+  // Runs before duplicating or saving the file (the editor saves pending changes first)
+  onSavePending?: () => Promise<unknown> | void
   // Runs before deleting (the editor stops its autosave)
   onBeforeRemove?: () => void
   onRemoved?: () => void
@@ -35,11 +37,11 @@ type MapaActionsMenuProps = {
 } & Omit<IconButtonProps, 'aria-label'>
 
 /**
- * "…" menu of a map: change its data, duplicate it, delete it
+ * "…" menu of a map: change its data, export or share it, duplicate it, delete it
  */
 export const MapaActionsMenu = ({
   mapa,
-  onBeforeDuplicate,
+  onSavePending,
   onBeforeRemove,
   onRemoved,
   onExport,
@@ -54,6 +56,7 @@ export const MapaActionsMenu = ({
   const { mutateAsync: saveInfo, isPending: isSaving } = useSaveMapaInfo()
   const { mutateAsync: duplicate } = useDuplicateMapa()
   const { mutateAsync: remove, isPending: isRemoving } = useRemoveMapa()
+  const { saveFile, isExporting: isSavingFile } = useMapaFile()
 
   const fail = (title: string) =>
     toast({
@@ -66,7 +69,7 @@ export const MapaActionsMenu = ({
 
   const onDuplicate = async () => {
     try {
-      await onBeforeDuplicate?.()
+      await onSavePending?.()
       const copy = await duplicate({
         id: mapa.id,
         titol: t('mapes.copy_of', { defaultValue: '{{title}} (còpia)', title: mapa.titol }),
@@ -76,6 +79,11 @@ export const MapaActionsMenu = ({
     } catch {
       fail(t('mapes.duplicate_error', { defaultValue: 'No s’ha pogut duplicar el mapa' }))
     }
+  }
+
+  const onFile = async (action: MapaFileAction) => {
+    await onSavePending?.()
+    await saveFile(mapa.id, mapa.titol, action)
   }
 
   const onRemove = async () => {
@@ -125,9 +133,25 @@ export const MapaActionsMenu = ({
                 >
                   {t('mapes.export_pdf', { defaultValue: 'Exporta en PDF (DIN A4)' })}
                 </MenuItem>
-                <MenuDivider />
               </>
             )}
+            <MenuItem
+              icon={<Icon as={icons.download} boxSize={4} />}
+              onClick={() => onFile('download')}
+              isDisabled={isSavingFile}
+            >
+              {t('mapes.file_download', { defaultValue: 'Descarrega el mapa per compartir-lo' })}
+            </MenuItem>
+            {canShareFiles() && (
+              <MenuItem
+                icon={<Icon as={icons.share} boxSize={4} />}
+                onClick={() => onFile('share')}
+                isDisabled={isSavingFile}
+              >
+                {t('mapes.file_share', { defaultValue: 'Comparteix el mapa…' })}
+              </MenuItem>
+            )}
+            <MenuDivider />
             <MenuItem icon={<Icon as={icons.copy} boxSize={4} />} onClick={onDuplicate}>
               {t('mapes.duplicate', { defaultValue: 'Duplica' })}
             </MenuItem>

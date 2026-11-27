@@ -115,6 +115,10 @@ export const MAPA = {
 
 export const MAPA_PNG_EXT = '.png'
 export const MAPA_PDF_EXT = '.pdf'
+// File to share a single map with another Open Bombers user
+export const MAPA_FILE_EXT = '.mapa.json'
+export const MAPA_FILE_FORMAT = 'open-bombers-mapa'
+export const MAPA_FILE_VERSION = 1
 
 // PDF reader with annotations
 export const PDF = {

@@ -2,7 +2,7 @@ import { Badge, Box, Button, Flex, Heading, Icon, Select, SimpleGrid, Text, useD
 import { formatDistanceToNow } from 'date-fns'
 import { ca } from 'date-fns/locale'
 import { motion, useReducedMotion } from 'framer-motion'
-import { ReactNode, useMemo } from 'react'
+import { ReactNode, useMemo, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link as RouterLink, useSearchParams } from 'react-router-dom'
 import { useStudyData } from '~components/Layout/Contexts/StudyDataContext'
@@ -13,6 +13,8 @@ import { temaShortCode } from '~components/Planificacio/structure'
 import { mapaPath } from '~src/router/routes'
 import { icons } from '~theme/icons'
 import { PRESS_SCALE, spring, STAGGER_MAX, STAGGER_STEP } from '~theme/motion'
+import { MAPA_FILE_EXT } from '~utils/constants'
+import { useMapaFile } from './export/useMapaFile'
 import { linkLabel } from './logic'
 import { MapaActionsMenu } from './MapaActionsMenu'
 import { MapaFormModal } from './MapaFormModal'
@@ -119,6 +121,8 @@ export const MapesView = () => {
   const { data: mapes, isLoading, isError, refetch } = useMapes()
   const form = useDisclosure()
   const { create, isPending } = useNewMapa()
+  const fileInput = useRef<HTMLInputElement>(null)
+  const { openFile, isImporting } = useMapaFile()
 
   const setFilter = (value: string) => {
     const next = new URLSearchParams(params)
@@ -144,6 +148,24 @@ export const MapesView = () => {
     <Button leftIcon={<Icon as={icons.add} />} onClick={form.onOpen} size='md'>
       {t('mapes.new', { defaultValue: 'Nou mapa' })}
     </Button>
+  )
+  const importButton = (
+    <Button
+      leftIcon={<Icon as={icons.upload} />}
+      onClick={() => fileInput.current?.click()}
+      isLoading={isImporting}
+      variant='outline'
+      colorScheme='gray'
+      size='md'
+    >
+      {t('mapes.import', { defaultValue: 'Importa' })}
+    </Button>
+  )
+  const actions = (
+    <Flex gap={2} wrap='wrap' justify='center'>
+      {importButton}
+      {newButton}
+    </Flex>
   )
 
   let body: ReactNode
@@ -171,9 +193,9 @@ export const MapesView = () => {
         title={t('mapes.empty_title', { defaultValue: 'Encara no tens cap mapa mental' })}
         desc={t('mapes.empty_desc', {
           defaultValue:
-            'Crea’n un per resumir un tema: la idea principal al centre i les branques al voltant. També el pots obrir des de la taula de planificació.',
+            'Crea’n un per resumir un tema: la idea principal al centre i les branques al voltant. També el pots obrir des de la taula de planificació, o importar-ne un que t’hagin enviat.',
         })}
-        action={newButton}
+        action={actions}
       />
     )
   else if (!visible.length)
@@ -210,7 +232,7 @@ export const MapesView = () => {
         subtitle={t('mapes.subtitle', {
           defaultValue: 'Resumeix cada tema amb idees i branques. Funciona amb teclat, ratolí i pantalla tàctil.',
         })}
-        right={!!mapes?.length && newButton}
+        right={!!mapes?.length && actions}
       />
       {!!mapes?.length && (
         <Flex mb={4} align='center' gap={3}>
@@ -237,6 +259,17 @@ export const MapesView = () => {
         </Flex>
       )}
       {body}
+
+      <input
+        ref={fileInput}
+        type='file'
+        accept={`${MAPA_FILE_EXT},.json,application/json`}
+        hidden
+        onChange={(e) => {
+          openFile(e.target.files?.[0])
+          e.target.value = ''
+        }}
+      />
 
       <MapaFormModal
         isOpen={form.isOpen}

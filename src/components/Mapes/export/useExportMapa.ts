@@ -12,7 +12,7 @@ import { canvasBlob, renderMapa } from './render'
 export type ExportKind = 'png' | 'pdf'
 
 /** "Tema 3: Prevenció!" → "tema-3-prevencio" */
-const fileSlug = (title: string) =>
+export const fileSlug = (title: string) =>
   title
     .normalize('NFD')
     .replace(/[̀-ͯ]/g, '')
