@@ -27,6 +27,7 @@ import { TemariBatchResult, TemariPdf, TemariProgress } from '~components/Temari
 import {
   BACKUP_VERSION,
   IDB_STORES,
+  MAPA,
   MAPA_FILE_FORMAT,
   MAPA_FILE_VERSION,
   STORAGE_KEYS,
@@ -35,8 +36,16 @@ import {
 import { DayString, IsoDay, isoDayOf, today, weekIdOf, WeekId } from '~utils/dates'
 import { getSlices, readSlice, registerSlice, removeSlice, writeSlice } from './storage'
 import { db } from './db'
+import { isCustomColor } from '~components/Mapes/colors'
 import { migrateMapa, newId, resumOf } from '~components/Mapes/logic'
-import { MapaFile, MapaInfoParams, MapaMental, NouMapaParams, SaveContentParams } from '~components/Mapes/types'
+import {
+  CustomColor,
+  MapaFile,
+  MapaInfoParams,
+  MapaMental,
+  NouMapaParams,
+  SaveContentParams,
+} from '~components/Mapes/types'
 import { countPagines, migrateAnotacions } from '~components/Anotacions/logic'
 import { AnotacionsResum, PdfAnotacions, SaveAnotacionsParams } from '~components/Anotacions/types'
 
@@ -554,6 +563,36 @@ export const temari = {
   },
 }
 
+// Custom colors of ideas saved by the user, shared by every map
+const cleanColors = (raw: unknown): CustomColor[] =>
+  Array.isArray(raw)
+    ? Array.from(new Set(raw.filter(isCustomColor).map((c) => c.toLowerCase() as CustomColor))).slice(
+        0,
+        MAPA.SAVED_COLORS_MAX
+      )
+    : []
+
+export const mapaColorsSlice = registerSlice<CustomColor[]>({
+  name: 'mapa_colors',
+  key: STORAGE_KEYS.MAPA_COLORS,
+  defaults: () => [],
+  migrate: cleanColors,
+})
+
+const mapaColors = {
+  list: async () => readSlice(mapaColorsSlice),
+  add: async (color: CustomColor) => {
+    const next = cleanColors([color, ...readSlice(mapaColorsSlice)])
+    writeSlice(mapaColorsSlice, next)
+    return next
+  },
+  remove: async (color: CustomColor) => {
+    const next = readSlice(mapaColorsSlice).filter((c) => c !== color.toLowerCase())
+    writeSlice(mapaColorsSlice, next)
+    return next
+  },
+}
+
 export default {
   plan,
   repassos,
@@ -561,5 +600,6 @@ export default {
   backup,
   temari,
   mapes,
+  mapaColors,
   anotacions,
 }

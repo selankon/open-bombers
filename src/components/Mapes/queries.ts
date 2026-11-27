@@ -1,12 +1,13 @@
 import { QueryClient, useMutation, UseMutationOptions, useQuery, useQueryClient } from '@tanstack/react-query'
 import api from '~src/services/api'
 import { resumOf } from './logic'
-import { MapaFile, MapaInfoParams, MapaMental, MapaResum, NouMapaParams, SaveContentParams } from './types'
+import { CustomColor, MapaFile, MapaInfoParams, MapaMental, MapaResum, NouMapaParams, SaveContentParams } from './types'
 
 export const MapesKeys = {
   all: ['mapes'],
   list: ['mapes', 'list'],
   detail: (id: string) => ['mapes', 'detail', id],
+  colors: ['mapes', 'colors'],
 }
 
 type Options<TData, TVars> = Omit<UseMutationOptions<TData, Error, TVars>, 'mutationFn'>
@@ -95,6 +96,31 @@ export const useImportMapaFile = (options?: Options<MapaMental, unknown>) => {
   return useMutation({
     mutationFn: (file: unknown) => api.mapes.importFile(file),
     onSuccess: (mapa) => storeMapa(queryClient, mapa),
+    ...options,
+  })
+}
+
+// Custom colors saved for every map
+export const useMapaColors = () =>
+  useQuery({
+    queryKey: MapesKeys.colors,
+    queryFn: () => api.mapaColors.list(),
+  })
+
+export const useSaveMapaColor = (options?: Options<CustomColor[], CustomColor>) => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (color: CustomColor) => api.mapaColors.add(color),
+    onSuccess: (colors) => queryClient.setQueryData(MapesKeys.colors, colors),
+    ...options,
+  })
+}
+
+export const useRemoveMapaColor = (options?: Options<CustomColor[], CustomColor>) => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (color: CustomColor) => api.mapaColors.remove(color),
+    onSuccess: (colors) => queryClient.setQueryData(MapesKeys.colors, colors),
     ...options,
   })
 }

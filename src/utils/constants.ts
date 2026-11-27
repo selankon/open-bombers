@@ -10,6 +10,7 @@ export const STORAGE_KEYS = {
   PWA_BANNER_DISMISSED: 'pwaBannerDismissed',
   LANGUAGE: `${APP_SLUG}_lang`,
   PALETTE: `${APP_SLUG}_palette`,
+  MAPA_COLORS: `${APP_SLUG}_mapa_colors`,
 } as const
 
 // Current version of the backup file format
@@ -125,6 +126,8 @@ export const MAPA = {
   CUSTOM_COLOR: '#0e7c86',
   // Opacity step of the custom color (%)
   OPACITY_STEP: 5,
+  // Custom colors kept for every map (the newest first)
+  SAVED_COLORS_MAX: 16,
 }
 
 export const MAPA_PNG_EXT = '.png'

@@ -12,13 +12,16 @@ import {
   Stack,
   Switch,
   Text,
+  IconButton,
+  useToast,
 } from '@chakra-ui/react'
-import { ReactNode } from 'react'
+import { ReactNode, useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { icons } from '~theme/icons'
 import { MAPA } from '~utils/constants'
 import { colorLook, customColor, isCustomColor, parseCustom } from '../colors'
 import { BoxSize } from '../logic'
+import { useMapaColors, useRemoveMapaColor, useSaveMapaColor } from '../queries'
 import {
   BRANCA_ESTILS,
   BRANCA_GRUIXOS,
@@ -164,6 +167,37 @@ const CustomColorPicker = ({
   const transparent = !!rgba && rgba.a === 0
   const label = t('mapes.style.custom_color', { defaultValue: 'Tria qualsevol color' })
   const transparentLabel = t('mapes.style.transparent', { defaultValue: 'Transparent' })
+  const toast = useToast()
+  const inputRef = useRef<HTMLInputElement>(null)
+  const valueRef = useRef(value)
+  valueRef.current = value
+  const onStorageError = () =>
+    toast({
+      title: t('mapes.colors_error', { defaultValue: 'No s’han pogut desar els teus colors' }),
+      description: t('mapes.colors_error_desc', {
+        defaultValue:
+          'Pot ser que l’emmagatzematge del navegador estigui ple. El color de la idea sí que s’ha aplicat.',
+      }),
+      status: 'error',
+      duration: 5000,
+      isClosable: true,
+    })
+  const { data: saved = [] } = useMapaColors()
+  const { mutate: save } = useSaveMapaColor({ onError: onStorageError })
+  const { mutate: remove } = useRemoveMapaColor({ onError: onStorageError })
+  const isSaved = !!custom && saved.includes(custom)
+
+  // A color chosen in the system picker joins "my colors" when the picker closes
+  useEffect(() => {
+    const el = inputRef.current
+    if (!el) return
+    const onCommit = () => {
+      onPreviewEnd()
+      if (isCustomColor(valueRef.current)) save(valueRef.current)
+    }
+    el.addEventListener('change', onCommit)
+    return () => el.removeEventListener('change', onCommit)
+  }, [save, onPreviewEnd])
 
   return (
     <Stack spacing={3} mt={3}>
@@ -196,6 +230,7 @@ const CustomColorPicker = ({
             />
           </Flex>
           <chakra.input
+            ref={inputRef}
             type='color'
             aria-label={label}
             value={rgb}
@@ -258,6 +293,67 @@ const CustomColorPicker = ({
             {Math.round(alpha * 100)}%
           </Text>
         </Flex>
+      )}
+      {(saved.length > 0 || custom) && (
+        <Box>
+          <Text fontSize='xs' color='textMuted' mb={2}>
+            {t('mapes.style.my_colors', { defaultValue: 'Els meus colors (a tots els mapes)' })}
+          </Text>
+          <Flex gap={2} wrap='wrap' align='center'>
+            {saved.map((c) => (
+              <Button
+                key={c}
+                aria-label={t('mapes.style.saved_color', { defaultValue: 'Color desat {{color}}', color: c })}
+                title={c}
+                aria-pressed={custom === c}
+                onClick={() => onChange(c)}
+                minW={8}
+                w={8}
+                h={8}
+                p={0}
+                borderRadius='full'
+                overflow='hidden'
+                position='relative'
+                sx={CHECKER}
+                boxShadow={swatchRing(custom === c)}
+                _hover={{ opacity: 0.85 }}
+              >
+                <Flex position='absolute' inset={0} align='center' justify='center' bg={colorLook(c).solid}>
+                  {custom === c && <Icon as={icons.check} color={colorLook(c).onSolid} boxSize={4} />}
+                </Flex>
+              </Button>
+            ))}
+            {custom && !isSaved && (
+              <IconButton
+                aria-label={t('mapes.style.save_color', { defaultValue: 'Desa aquest color als meus colors' })}
+                title={t('mapes.style.save_color', { defaultValue: 'Desa aquest color als meus colors' })}
+                icon={<Icon as={icons.add} />}
+                onClick={() => save(custom)}
+                variant='outline'
+                colorScheme='gray'
+                borderStyle='dashed'
+                borderRadius='full'
+                size='sm'
+              />
+            )}
+            {custom && isSaved && (
+              <IconButton
+                aria-label={t('mapes.style.remove_color', {
+                  defaultValue: 'Treu aquest color dels meus colors (les idees el mantenen)',
+                })}
+                title={t('mapes.style.remove_color', {
+                  defaultValue: 'Treu aquest color dels meus colors (les idees el mantenen)',
+                })}
+                icon={<Icon as={icons.delete} />}
+                onClick={() => remove(custom)}
+                variant='ghost'
+                colorScheme='gray'
+                borderRadius='full'
+                size='sm'
+              />
+            )}
+          </Flex>
+        </Box>
       )}
     </Stack>
   )
