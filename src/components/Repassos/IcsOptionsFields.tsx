@@ -98,6 +98,14 @@ export const IcsOptionsFields = () => {
             onChange={(e) => set({ include_estudis: e.target.checked })}
           />
         </Flex>
+        <Flex as='label' align='center' justify='space-between' gap={3} fontSize='sm'>
+          {t('ics.include_tests', { defaultValue: 'Incloure els tests del paquet' })}
+          <Switch
+            colorScheme='primary'
+            isChecked={options.include_tests}
+            onChange={(e) => set({ include_tests: e.target.checked })}
+          />
+        </Flex>
       </Stack>
     </Stack>
   )

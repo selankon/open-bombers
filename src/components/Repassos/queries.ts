@@ -4,12 +4,14 @@ import { Cells } from '~components/Planificacio/types'
 import api from '~src/services/api'
 import { DayString, WeekId } from '~utils/dates'
 import {
+  AddPuntualsParams,
   IcsState,
   Instance,
   MoveSessionParams,
   RegisterStudyParams,
   RepasConfig,
   RepassosState,
+  SaveTestParams,
   WeekConfig,
 } from './types'
 
@@ -93,6 +95,30 @@ export const useSetDone = (
 export const useMoveOverdueToToday = (
   options?: Omit<UseMutationOptions<CommitResult, Error, Instance[]>, 'mutationFn'>
 ) => useRepassosMutation((instances: Instance[]) => api.repassos.moveOverdueToToday(instances), options)
+
+// Create one-off reviews of some apartats
+export const useAddPuntuals = (
+  options?: Omit<UseMutationOptions<CommitResult, Error, AddPuntualsParams>, 'mutationFn'>
+) => useRepassosMutation((p: AddPuntualsParams) => api.repassos.addPuntuals(p), options)
+
+// Delete a one-off review
+export const useRemovePuntual = (options?: Omit<UseMutationOptions<CommitResult, Error, string>, 'mutationFn'>) =>
+  useRepassosMutation((id: string) => api.repassos.removePuntual(id), options)
+
+// Save or remove the test result of a tema
+export const useSaveTestResult = (
+  options?: Omit<UseMutationOptions<CommitResult, Error, SaveTestParams>, 'mutationFn'>
+) => useRepassosMutation((p: SaveTestParams) => api.repassos.saveTestResult(p), options)
+
+// Add a tema to the study package by hand, or remove it
+export const useSetInPaquet = (
+  options?: Omit<UseMutationOptions<CommitResult, Error, { temaId: string; inPaquet: boolean }>, 'mutationFn'>
+) => useRepassosMutation((p: { temaId: string; inPaquet: boolean }) => api.repassos.setInPaquet(p), options)
+
+// Mark temes as added (or not) to the package of the tests App
+export const useSetAApp = (
+  options?: Omit<UseMutationOptions<CommitResult, Error, { temaIds: string[]; value: boolean }>, 'mutationFn'>
+) => useRepassosMutation((p: { temaIds: string[]; value: boolean }) => api.repassos.setAApp(p), options)
 
 // Save the calendar export state
 export const useSaveIcsState = (

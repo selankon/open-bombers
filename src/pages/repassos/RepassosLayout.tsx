@@ -35,7 +35,8 @@ export const RepassosLayout = () => {
       <PageHeader
         title={t('repassos.title', { defaultValue: 'Calendari de Repassos' })}
         subtitle={t('repassos.subtitle', {
-          defaultValue: 'Repàs diari, setmanal i mensual de cada apartat a partir del dia que el vas estudiar.',
+          defaultValue:
+            'Repàs diari, setmanal i mensual de cada apartat, i després tests del paquet per mantenir-lo viu.',
         })}
         right={
           <>
@@ -71,6 +72,7 @@ export const RepassosLayout = () => {
           tabs={[
             { path: ROUTES.REPASSOS.TODAY, label: t('repassos.tab_today', { defaultValue: 'Avui' }) },
             { path: ROUTES.REPASSOS.CALENDAR, label: t('repassos.tab_calendar', { defaultValue: 'Calendari' }) },
+            { path: ROUTES.REPASSOS.PAQUET, label: t('repassos.tab_paquet', { defaultValue: 'Paquet' }) },
           ]}
         />
       </Flex>

@@ -4,9 +4,17 @@ import { derivePlan } from '~components/Planificacio/logic'
 import { useCells, useStructure } from '~components/Planificacio/queries'
 import { indexStructure } from '~components/Planificacio/structure'
 import { Apartat, Cells, Level, PlanDerived, Structure, Tema } from '~components/Planificacio/types'
-import { groupSessions, instancesFromState, loadByDay, reviewsByRow, RowReviews } from '~components/Repassos/logic'
+import {
+  groupSessions,
+  instancesFromState,
+  loadByDay,
+  reviewsByRow,
+  RowReviews,
+  sortSessions,
+} from '~components/Repassos/logic'
+import { derivePaquet, testSessions } from '~components/Repassos/paquet'
 import { useRepassosState } from '~components/Repassos/queries'
-import { Instance, RepassosState, Session } from '~components/Repassos/types'
+import { Instance, PaquetTema, RepassosState, Session } from '~components/Repassos/types'
 import { DATA_CHANGED_EVENT } from '~utils/constants'
 import { DayString, today } from '~utils/dates'
 
@@ -17,6 +25,9 @@ export interface StudyData {
   derived: PlanDerived
   repassos: RepassosState
   instances: Instance[]
+  // Study package temes with their next test (spec §3.7)
+  paquet: PaquetTema[]
+  // review, study and test sessions, by day
   sessions: Session[]
   // Calendar reviews shown in the planificació review columns, by row
   reviews: Record<string, RowReviews>
@@ -77,15 +88,39 @@ const useStudyDataProvider = (): StudyData | null => {
     () => (repassos && cells ? instancesFromState(repassos, cells, avui) : null),
     [repassos, cells, avui]
   )
+  const paquet = useMemo(
+    () =>
+      structure && instances && repassos
+        ? derivePaquet({
+            temes: structure.temes,
+            estudis: repassos.estudis,
+            instances,
+            paquet: repassos.paquet,
+            config: repassos.config,
+          })
+        : null,
+    [structure, instances, repassos]
+  )
+  const temaOrder = useMemo(
+    () => (structure ? Object.fromEntries(structure.temes.map((t, i) => [t.id, i])) : null),
+    [structure]
+  )
   const sessions = useMemo(
-    () => (instances && repassos ? groupSessions(instances, repassos.estudis) : null),
-    [instances, repassos]
+    () =>
+      instances && repassos && paquet && temaOrder
+        ? sortSessions([
+            ...groupSessions(instances, repassos.estudis),
+            ...testSessions({ paquet, config: repassos.config, avui, temaOrder }),
+          ])
+        : null,
+    [instances, repassos, paquet, temaOrder, avui]
   )
   const load = useMemo(() => (instances ? loadByDay(instances) : null), [instances])
   const reviews = useMemo(() => (instances ? reviewsByRow(instances) : null), [instances])
 
   return useMemo(() => {
-    if (!structure || !cells || !repassos || !derived || !instances || !sessions || !index || !reviews) return null
+    if (!structure || !cells || !repassos || !derived || !instances || !paquet || !sessions || !index || !reviews)
+      return null
     return {
       avui,
       structure,
@@ -93,6 +128,7 @@ const useStudyDataProvider = (): StudyData | null => {
       derived,
       repassos,
       instances,
+      paquet,
       sessions,
       reviews,
       load,
@@ -101,5 +137,5 @@ const useStudyDataProvider = (): StudyData | null => {
       apartatOf: (rowId: string) => index.rowToTema[rowId]?.apartats.find((a) => a.row_id === rowId),
       levelOf: (rowId: string) => derived.apartatLevels[rowId]?.level ?? null,
     }
-  }, [avui, structure, cells, repassos, derived, instances, sessions, reviews, load, index])
+  }, [avui, structure, cells, repassos, derived, instances, paquet, sessions, reviews, load, index])
 }

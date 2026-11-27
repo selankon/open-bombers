@@ -29,8 +29,9 @@ import { LevelBadge } from '~components/Planificacio/LevelBadge'
 import { icons } from '~theme/icons'
 import { formatLong, formatShort, weekIdOf } from '~utils/dates'
 import { ApartatItem, useApartatLabel } from './ApartatItem'
-import { useMoveInstance, useMoveSession, useRemoveStudy } from './queries'
-import { kindColors, kindLabel } from './SessionKindLabel'
+import { useMoveInstance, useMoveSession, useRemovePuntual, useRemoveStudy } from './queries'
+import { kindColors, kindLabel, sessionCount, sessionTitle } from './SessionKindLabel'
+import { TestHint, TestItemsList } from './TestSession'
 import { Instance, Session } from './types'
 import { useDoneToggle } from './useDoneToggle'
 
@@ -83,6 +84,22 @@ const InstanceMoveButton = ({ instance }: { instance: Instance }) => {
   )
 }
 
+const RemovePuntualButton = ({ instance }: { instance: Instance }) => {
+  const { t } = useTranslation()
+  const { mutate } = useRemovePuntual()
+  return (
+    <IconButton
+      aria-label={t('repassos.remove_puntual', { defaultValue: 'Esborrar aquest repàs puntual' })}
+      title={t('repassos.remove_puntual', { defaultValue: 'Esborrar aquest repàs puntual' })}
+      icon={<icons.delete />}
+      size='sm'
+      variant='ghost'
+      colorScheme='red'
+      onClick={() => mutate(instance.id)}
+    />
+  )
+}
+
 type SessionDrawerProps = {
   session: Session | null
   onClose: () => void
@@ -112,7 +129,8 @@ export const SessionDrawer = ({ session, onClose }: SessionDrawerProps) => {
 
   const colors = kindColors(session.kind)
   const isStudy = session.kind === 'estudi'
-  const count = isStudy ? session.rowIds.length : session.instances.length
+  const isTest = session.kind === 'test'
+  const count = sessionCount(session)
   const pending = session.instances.filter((i) => !i.isDone)
   const sorted = [...session.instances].sort(
     (a, b) =>
@@ -157,12 +175,7 @@ export const SessionDrawer = ({ session, onClose }: SessionDrawerProps) => {
             <Flex align='center' gap={2}>
               <Box w={3} h={3} borderRadius='full' bg={colors.fg} />
               <Text>
-                {isStudy
-                  ? kindLabel(t, 'estudi')
-                  : t('repassos.session_title', {
-                      defaultValue: 'Repàs {{ kind }}',
-                      kind: kindLabel(t, session.kind).toLowerCase(),
-                    })}{' '}
+                {sessionTitle(t, session.kind)}{' '}
                 <Text as='span' color='textMuted' fontWeight={500}>
                   · {count}
                 </Text>
@@ -184,59 +197,70 @@ export const SessionDrawer = ({ session, onClose }: SessionDrawerProps) => {
           </DrawerHeader>
           <DrawerBody>
             <Stack spacing={5}>
-              {!isStudy && pending.length > 0 && (
+              {isTest && <TestHint />}
+
+              {!isStudy && !isTest && pending.length > 0 && (
                 <Button leftIcon={<icons.done />} onClick={() => setDone(pending, true)} alignSelf='flex-start'>
                   {t('repassos.mark_session_done', { defaultValue: 'Marcar tota la sessió com a feta' })}
                 </Button>
               )}
 
               <Stack spacing={0.5} mx={-2}>
-                {isStudy
-                  ? [...session.rowIds]
-                      .sort((a, b) => (rowIndex[a] ?? 0) - (rowIndex[b] ?? 0))
-                      .map((rowId) => {
-                        const { code, text } = labelOf(rowId)
-                        return (
-                          <Flex
-                            key={rowId}
-                            align='center'
-                            gap={3}
-                            px={3}
-                            py={2}
-                            borderRadius='10px'
-                            _hover={{ bg: 'rowHover' }}
-                          >
-                            <Text flex={1} fontSize='sm'>
-                              <Text as='span' fontWeight={800} color='accent'>
-                                {code}
-                              </Text>
-                              {' · '}
-                              {text}
+                {isTest ? (
+                  <TestItemsList session={session} />
+                ) : isStudy ? (
+                  [...session.rowIds]
+                    .sort((a, b) => (rowIndex[a] ?? 0) - (rowIndex[b] ?? 0))
+                    .map((rowId) => {
+                      const { code, text } = labelOf(rowId)
+                      return (
+                        <Flex
+                          key={rowId}
+                          align='center'
+                          gap={3}
+                          px={3}
+                          py={2}
+                          borderRadius='10px'
+                          _hover={{ bg: 'rowHover' }}
+                        >
+                          <Text flex={1} fontSize='sm'>
+                            <Text as='span' fontWeight={800} color='accent'>
+                              {code}
                             </Text>
-                            <LevelBadge level={levelOf(rowId)} />
-                            <IconButton
-                              aria-label={t('repassos.remove_study', { defaultValue: "Esborrar l'estudi" })}
-                              title={t('repassos.remove_study', { defaultValue: "Esborrar l'estudi" })}
-                              icon={<icons.delete />}
-                              size='sm'
-                              variant='ghost'
-                              colorScheme='red'
-                              onClick={() => removeStudy([rowId])}
-                            />
-                          </Flex>
-                        )
-                      })
-                  : sorted.map((inst) => (
-                      <ApartatItem
-                        key={inst.id}
-                        instance={inst}
-                        onToggle={toggleOne}
-                        right={<InstanceMoveButton instance={inst} />}
-                      />
-                    ))}
+                            {' · '}
+                            {text}
+                          </Text>
+                          <LevelBadge level={levelOf(rowId)} />
+                          <IconButton
+                            aria-label={t('repassos.remove_study', { defaultValue: "Esborrar l'estudi" })}
+                            title={t('repassos.remove_study', { defaultValue: "Esborrar l'estudi" })}
+                            icon={<icons.delete />}
+                            size='sm'
+                            variant='ghost'
+                            colorScheme='red'
+                            onClick={() => removeStudy([rowId])}
+                          />
+                        </Flex>
+                      )
+                    })
+                ) : (
+                  sorted.map((inst) => (
+                    <ApartatItem
+                      key={inst.id}
+                      instance={inst}
+                      onToggle={toggleOne}
+                      right={
+                        <>
+                          <InstanceMoveButton instance={inst} />
+                          {inst.tipus === 'puntual' && <RemovePuntualButton instance={inst} />}
+                        </>
+                      }
+                    />
+                  ))
+                )}
               </Stack>
 
-              {(isStudy || pending.length > 0) && (
+              {!isTest && (isStudy || pending.length > 0) && (
                 <Box bg='surfaceMuted' borderRadius='14px' p={3}>
                   <Text fontSize='sm' fontWeight={700} mb={2}>
                     {isStudy

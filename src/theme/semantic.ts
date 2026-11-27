@@ -61,6 +61,12 @@ export const semanticColors = {
   'kind.setmanal.bg': { default: '#E3F3F2', _dark: 'rgba(149,203,202,0.16)' },
   'kind.mensual': { default: '#C0567E', _dark: '#E89DA2' },
   'kind.mensual.bg': { default: '#FDE8EC', _dark: 'rgba(232,157,162,0.16)' },
+  'kind.llarg': { default: '#4F46E5', _dark: '#A5B4FC' },
+  'kind.llarg.bg': { default: '#EEF2FF', _dark: 'rgba(165,180,252,0.16)' },
+  'kind.puntual': { default: '#B45309', _dark: '#FCD34D' },
+  'kind.puntual.bg': { default: '#FEF3C7', _dark: 'rgba(252,211,77,0.14)' },
+  'kind.test': { default: '#4D7C0F', _dark: '#BEF264' },
+  'kind.test.bg': { default: '#F0F7E4', _dark: 'rgba(190,242,100,0.14)' },
   'kind.estudi': { default: 'primary.600', _dark: 'primary.300' },
   'kind.estudi.bg': { default: 'primary.50', _dark: 'rgba(229,83,26,0.18)' },
 

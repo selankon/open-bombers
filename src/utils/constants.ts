@@ -13,7 +13,7 @@ export const STORAGE_KEYS = {
 } as const
 
 // Current version of the backup file format
-export const BACKUP_VERSION = 4
+export const BACKUP_VERSION = 5
 
 // Prefix of the compressed text code used to move data between devices
 export const BACKUP_CODE_PREFIX = 'BMB2:'
@@ -43,6 +43,12 @@ export const LEVEL_LAST_SCORES = 3
 
 // Days shown in the "next days" preview of the today view
 export const TODAY_PREVIEW_DAYS = 7
+
+// Weeks ahead for which test sessions of the study package are projected (they depend on the results)
+export const TEST_PROJECCIO_SETMANES = 8
+
+// To fill a test with few temes, a tema can be brought forward a quarter of its interval, and at least these days
+export const TEST_MIN_EARLY_DAYS = 3
 
 // Official server of the syllabus PDFs (convocatòria ACCÉS 81/26). It sends CORS headers, so the app can fetch them
 export const TEMARI_BASE_URL =

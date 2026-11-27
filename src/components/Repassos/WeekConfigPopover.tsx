@@ -96,7 +96,7 @@ export const WeekConfigPopover = ({ week, compact }: { week: WeekId; compact?: b
                 {t('repassos.week', { defaultValue: 'Setmana {{ week }}', week })}
               </Text>
               {row('dia_setmanal', t('repassos.week_setmanal', { defaultValue: 'Repàs setmanal:' }))}
-              {row('dia_mensual', t('repassos.week_mensual', { defaultValue: 'Repàs mensual:' }))}
+              {row('dia_mensual', t('repassos.week_mensual', { defaultValue: 'Mensual i llarg termini:' }))}
               <Button
                 size='xs'
                 variant='ghost'
