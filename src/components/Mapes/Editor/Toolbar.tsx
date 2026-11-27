@@ -50,12 +50,19 @@ export const PopoverPanel = ({
   trigger,
   children,
   w = 'auto',
+  isOpen,
+  onOpen,
+  onClose,
 }: {
   trigger: ReactNode
   children: ReactNode
   w?: string
+  // Optional control from outside (e.g. a keyboard shortcut)
+  isOpen?: boolean
+  onOpen?: () => void
+  onClose?: () => void
 }) => (
-  <Popover placement='top' isLazy>
+  <Popover placement='top' isLazy isOpen={isOpen} onOpen={onOpen} onClose={onClose}>
     <PopoverTrigger>
       <Box display='inline-flex'>{trigger}</Box>
     </PopoverTrigger>
@@ -218,6 +225,9 @@ type ContextBarProps = {
   itemWidths: readonly number[]
   onItemStyle: (patch: { color?: MapaColor; gruix?: number }) => void
   stylePanel: ReactNode
+  styleOpen: boolean
+  onStyleOpen: () => void
+  onStyleClose: () => void
   canUndo: boolean
   canRedo: boolean
   zoom: number
@@ -344,9 +354,12 @@ export const ContextBar = (p: ContextBarProps) => {
         {p.hasSelection ? (
           <PopoverPanel
             w='340px'
+            isOpen={p.styleOpen}
+            onOpen={p.onStyleOpen}
+            onClose={p.onStyleClose}
             trigger={
               <ToolButton
-                label={t('mapes.tool.style', { defaultValue: 'Estil de la idea i la línia' })}
+                label={t('mapes.tool.style_key', { defaultValue: 'Estil de la idea i la línia (Ctrl+E)' })}
                 icon={<Icon as={icons.style} />}
               />
             }

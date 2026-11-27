@@ -279,6 +279,7 @@
       "move": "Mou-te per les idees",
       "newline": "Salt de línia en editar",
       "sibling": "Idea germana",
+      "style": "Estil de la idea i la línia",
       "undo": "Desfés",
       "zoom": "Zoom i veure-ho tot"
     },
@@ -362,6 +363,7 @@
       "select": "Selecciona i mou (Esc)",
       "shapes": "Formes",
       "style": "Estil de la idea i la línia",
+      "style_key": "Estil de la idea i la línia (Ctrl+E)",
       "undo": "Desfés (Ctrl+Z)",
       "zoom_in": "Apropa (+)",
       "zoom_out": "Allunya (−)"

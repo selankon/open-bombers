@@ -66,6 +66,10 @@ const ShortcutsHelp = () => {
                 label={t('mapes.key.edit', { defaultValue: 'Edita el text (o comença a escriure)' })}
               />
               <Shortcut
+                keys={['Ctrl', 'E']}
+                label={t('mapes.key.style', { defaultValue: 'Estil de la idea i la línia' })}
+              />
+              <Shortcut
                 keys={['Maj', 'Enter']}
                 label={t('mapes.key.newline', { defaultValue: 'Salt de línia en editar' })}
               />

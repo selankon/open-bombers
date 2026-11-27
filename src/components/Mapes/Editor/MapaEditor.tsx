@@ -100,6 +100,8 @@ export const MapaEditor = ({ mapa }: { mapa: MapaMental }) => {
   const [labelEditingId, setLabelEditingId] = useState<string | null>(null)
   const [drag, setDrag] = useState<{ ids: Set<string>; target: string | null } | null>(null)
   const [tool, setToolState] = useState<Tool>('seleccio')
+  // Style panel of the selected idea (also opened with Ctrl+E)
+  const [styleOpen, setStyleOpen] = useState(false)
   const [brushes, setBrushes] = useState(DEFAULT_BRUSHES)
   // Node just created: its first text joins the creation in the undo history
   const freshId = useRef<string | null>(null)
@@ -202,6 +204,9 @@ export const MapaEditor = ({ mapa }: { mapa: MapaMental }) => {
       setVp((v) => centerOn(v, selected.x, selected.y, size.w, size.h))
     }
   }, [selectedId])
+
+  // Close the style panel when the selection changes
+  useEffect(() => setStyleOpen(false), [selectedId])
 
   // ---- Selection and tools ----
   const keepFocus = () =>
@@ -469,6 +474,11 @@ export const MapaEditor = ({ mapa }: { mapa: MapaMental }) => {
       e.preventDefault()
       return redo()
     }
+    if (mod && key === 'e') {
+      e.preventDefault()
+      if (tool === 'seleccio' && selectedId) setStyleOpen(true)
+      return
+    }
     if (mod || e.altKey) return
     const handled = () => e.preventDefault()
     if (e.key === 'Escape') {
@@ -662,6 +672,12 @@ export const MapaEditor = ({ mapa }: { mapa: MapaMental }) => {
             />
           )
         }
+        styleOpen={styleOpen && !!selected}
+        onStyleOpen={() => setStyleOpen(true)}
+        onStyleClose={() => {
+          setStyleOpen(false)
+          keepFocus()
+        }}
         canUndo={canUndo}
         canRedo={canRedo}
         zoom={vp.k}
