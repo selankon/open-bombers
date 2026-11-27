@@ -23,7 +23,15 @@ import {
 import { BackupFile } from '~components/Backup/types'
 import { pdfById, pdfUrl } from '~components/Temari/logic'
 import { ALL_TEMARI_PDFS } from '~src/data/temari-pdfs'
-import { TemariBatchResult, TemariPdf, TemariProgress } from '~components/Temari/types'
+import {
+  Recurs,
+  RecursParams,
+  TemariBatchResult,
+  TemariPdf,
+  TemariProgress,
+  UpdateRecursParams,
+} from '~components/Temari/types'
+import { migrateRecurs, recursIdOf, recursPdfId, sortRecursos } from '~components/Temari/recursos'
 import {
   BACKUP_VERSION,
   IDB_STORES,
@@ -497,6 +505,8 @@ export const backup = {
     for (const slice of getSlices()) removeSlice(slice)
     await db.clear(IDB_STORES.MAPES)
     await db.clear(IDB_STORES.ANOTACIONS)
+    await db.clear(IDB_STORES.RECURSOS)
+    await db.clear(IDB_STORES.RECURSOS_FITXERS)
   },
 }
 
@@ -552,14 +562,87 @@ export const temari = {
       if (pdf) await cache.delete(pdfUrl(pdf))
     }
   },
-  // The PDF contents: the offline copy when there is one, otherwise from the official server
+  // The PDF contents: the offline copy when there is one, otherwise from the official server.
+  // PDFs added by the user come from this device.
   getBlob: async (id: string): Promise<Blob> => {
+    const own = recursIdOf(id)
+    if (own) return new Blob([await (await recursos.getBlob(own)).arrayBuffer()], { type: 'application/pdf' })
     const pdf = pdfById(id)
     if (!pdf) throw new ApiError(`unknown pdf ${id}`)
     const cached = hasCacheStorage() ? await (await openTemariCache()).match(pdfUrl(pdf)) : undefined
     const res = cached ?? (await fetchPdf(pdf))
     // Force the type so the browser opens it with its PDF viewer
     return new Blob([await res.arrayBuffer()], { type: 'application/pdf' })
+  },
+}
+
+type RecursBlob = { id: string; blob: Blob }
+
+const getRecurs = async (id: string) => {
+  const recurs = migrateRecurs(await db.get<Recurs>(IDB_STORES.RECURSOS, id))
+  if (!recurs) throw new ApiError(`recurs ${id} not found`)
+  return recurs
+}
+
+const fitxerOf = (file: File) => ({ nom: file.name, mime: file.type, mida: file.size })
+
+/**
+ * Extra temes and resources added by the user. They only live on this device (IndexedDB) and are
+ * not part of backups: the files can be far too big for a backup file.
+ */
+export const recursos = {
+  list: async (): Promise<Recurs[]> =>
+    sortRecursos(
+      (await db.getAll<Recurs>(IDB_STORES.RECURSOS)).map(migrateRecurs).filter((r): r is Recurs => r !== null)
+    ),
+  getBlob: async (id: string): Promise<Blob> => {
+    const record = await db.get<RecursBlob>(IDB_STORES.RECURSOS_FITXERS, id)
+    if (!record?.blob) throw new ApiError(`file of recurs ${id} not found`)
+    return record.blob
+  },
+  create: async ({ categoria, tema, titol, fitxer, url }: RecursParams): Promise<Recurs> => {
+    if (!fitxer && !url) throw new ApiError('a resource needs a file or a link')
+    const t = now()
+    const recurs: Recurs = {
+      id: newId(),
+      categoria,
+      tema: categoria === 'tema' ? tema : null,
+      titol,
+      fitxer: fitxer ? fitxerOf(fitxer) : null,
+      url: fitxer ? null : url,
+      creat: t,
+      modificat: t,
+    }
+    // Ask the browser not to evict the files under storage pressure (best effort)
+    navigator.storage?.persist?.().catch(() => undefined)
+    // The file first: a record never points to a missing file
+    if (fitxer) await db.put<RecursBlob>(IDB_STORES.RECURSOS_FITXERS, { id: recurs.id, blob: fitxer })
+    return db.put(IDB_STORES.RECURSOS, recurs)
+  },
+  // Changes the number, title, link or file (a null file keeps the current one)
+  update: async ({ id, tema, titol, fitxer, url }: UpdateRecursParams): Promise<Recurs> => {
+    const prev = await getRecurs(id)
+    if (fitxer) await db.put<RecursBlob>(IDB_STORES.RECURSOS_FITXERS, { id, blob: fitxer })
+    const keepsFile = !fitxer && !!prev.fitxer && !url
+    const next: Recurs = {
+      ...prev,
+      tema: prev.categoria === 'tema' ? tema : null,
+      titol,
+      fitxer: fitxer ? fitxerOf(fitxer) : keepsFile ? prev.fitxer : null,
+      url: fitxer || keepsFile ? null : url,
+      modificat: now(),
+    }
+    if (!next.fitxer && !next.url) throw new ApiError('a resource needs a file or a link')
+    await db.put(IDB_STORES.RECURSOS, next)
+    if (!next.fitxer && prev.fitxer) await db.delete(IDB_STORES.RECURSOS_FITXERS, id)
+    return next
+  },
+  // Deletes the resource, its file and the annotations of its PDF
+  remove: async (id: string) => {
+    await db.delete(IDB_STORES.RECURSOS, id)
+    await db.delete(IDB_STORES.RECURSOS_FITXERS, id)
+    await db.delete(IDB_STORES.ANOTACIONS, recursPdfId(id))
+    return id
   },
 }
 
@@ -602,4 +685,5 @@ export default {
   mapes,
   mapaColors,
   anotacions,
+  recursos,
 }

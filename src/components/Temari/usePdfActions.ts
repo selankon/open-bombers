@@ -7,6 +7,7 @@ import api from '~src/services/api'
 import { TEMARI_DOWNLOAD_DELAY } from '~utils/constants'
 import { downloadBlob } from '~utils/download'
 import { pdfFileName } from './logic'
+import { isRecursPdfId } from './recursos'
 import { useSavedPdfs } from './queries'
 import { TemariPdf } from './types'
 
@@ -22,7 +23,8 @@ export const usePdfActions = () => {
   const { data: saved = [] } = useSavedPdfs()
   const [busyId, setBusyId] = useState<string | null>(null)
 
-  const isSaved = (pdf: TemariPdf) => saved.includes(pdf.id)
+  // PDFs added by the user are always on the device
+  const isSaved = (pdf: TemariPdf) => isRecursPdfId(pdf.id) || saved.includes(pdf.id)
 
   const errorToast = () =>
     toast({

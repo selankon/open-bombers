@@ -258,9 +258,9 @@ export const BackupPanel = () => {
         isOpen={isResetOpen}
         onClose={() => setIsResetOpen(false)}
         title={t('backup.confirm_reset_title', { defaultValue: 'Esborrar totes les dades?' })}
-        body={t('backup.confirm_reset_body_all', {
+        body={t('backup.confirm_reset_body_own', {
           defaultValue:
-            'Es perdrà tot el progrés guardat en aquest dispositiu, també els mapes mentals i les anotacions dels PDF. Els PDF desats per llegir sense connexió es mantenen. Aquesta acció no es pot desfer.',
+            'Es perdrà tot el progrés guardat en aquest dispositiu, també els mapes mentals, les anotacions dels PDF i els temes i recursos que hi has afegit. Els PDF del temari desats per llegir sense connexió es mantenen. Aquesta acció no es pot desfer.',
         })}
         confirmLabel={t('backup.reset', { defaultValue: 'Esborrar totes les dades' })}
         onConfirm={confirmReset}

@@ -61,10 +61,19 @@ export const TEMARI_CACHE_NAME = `${APP_SLUG}_temari_v1`
 // Pause between files on "download all", so browsers don't drop downloads
 export const TEMARI_DOWNLOAD_DELAY = 400
 
-// IndexedDB database for the data too big for localStorage (mind maps, PDF annotations)
+// IndexedDB database for the data too big for localStorage (mind maps, PDF annotations, own files)
 export const IDB_NAME = `${APP_SLUG}_db`
-export const IDB_VERSION = 2
-export const IDB_STORES = { MAPES: 'mapes', ANOTACIONS: 'anotacions' } as const
+export const IDB_VERSION = 3
+export const IDB_STORES = {
+  MAPES: 'mapes',
+  ANOTACIONS: 'anotacions',
+  // Extra temes and resources added by the user (data) and their files (one Blob per record, same id)
+  RECURSOS: 'recursos',
+  RECURSOS_FITXERS: 'recursos_fitxers',
+} as const
+
+// Prefix of the reader id of a PDF added by the user ("propi-<recurs id>"), so it never clashes with the official ones
+export const RECURS_PDF_PREFIX = 'propi-'
 
 // BroadcastChannel used to tell other tabs that IndexedDB data changed
 export const IDB_CHANNEL = `${APP_SLUG}:idb`

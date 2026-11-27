@@ -11,6 +11,7 @@ import { MapaColor, MapaTrace } from '~components/Mapes/types'
 import { useSavedPdfs, useSavePdfs } from '~components/Temari/queries'
 import { TemariPdf } from '~components/Temari/types'
 import { usePdfActions } from '~components/Temari/usePdfActions'
+import { isRecursPdfId } from '~components/Temari/recursos'
 import { PDF } from '~utils/constants'
 import { useExportPdf } from '../export/useExportPdf'
 import { countPagines, eraseAll, onPagina, paginaOf, removeMarca, updateMarca } from '../logic'
@@ -249,7 +250,8 @@ export const Visor = ({ pdf, title, subtitle, doc, sizes, initial }: VisorProps)
     try {
       await saveAnotacions({ id: pdf.id, pagines: current })
       // Annotated PDFs are kept on the device, so the notes can always be read offline
-      if (countPagines(current) && !savedPdfs.includes(pdf.id) && navigator.onLine) saveOffline({ ids: [pdf.id] })
+      if (countPagines(current) && !isRecursPdfId(pdf.id) && !savedPdfs.includes(pdf.id) && navigator.onLine)
+        saveOffline({ ids: [pdf.id] })
     } catch {
       savedRef.current = previous
       if (!toast.isActive('anotacions-save-error')) {

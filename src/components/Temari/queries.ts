@@ -1,10 +1,15 @@
 import { useMutation, UseMutationOptions, useQuery, useQueryClient } from '@tanstack/react-query'
 import api from '~src/services/api'
-import { TemariBatchResult, TemariProgress } from './types'
+import { AnotacionsKeys } from '~components/Anotacions/queries'
+import { sortRecursos } from './recursos'
+import { Recurs, RecursParams, TemariBatchResult, TemariProgress, UpdateRecursParams } from './types'
 
 export const TemariKeys = {
   saved: ['temari', 'saved'],
+  recursos: ['temari', 'recursos'],
 }
+
+type Options<TData, TVars> = Omit<UseMutationOptions<TData, Error, TVars>, 'mutationFn'>
 
 // Ids of the PDFs saved for offline reading
 export const useSavedPdfs = () =>
@@ -41,3 +46,53 @@ export const useRemovePdfs = (options?: Omit<UseMutationOptions<string[], Error,
     ...options,
   })
 }
+
+// Extra temes and resources added by the user
+export const useRecursos = () =>
+  useQuery({
+    queryKey: TemariKeys.recursos,
+    queryFn: () => api.recursos.list(),
+  })
+
+const upsert = (recurs: Recurs) => (prev: Recurs[] | undefined) =>
+  prev ? sortRecursos([...prev.filter((r) => r.id !== recurs.id), recurs]) : prev
+
+export const useCreateRecurs = (options?: Options<Recurs, RecursParams>) => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (params: RecursParams) => api.recursos.create(params),
+    onSuccess: (recurs) => queryClient.setQueryData<Recurs[]>(TemariKeys.recursos, upsert(recurs)),
+    ...options,
+  })
+}
+
+export const useUpdateRecurs = (options?: Options<Recurs, UpdateRecursParams>) => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (params: UpdateRecursParams) => api.recursos.update(params),
+    onSuccess: (recurs) => queryClient.setQueryData<Recurs[]>(TemariKeys.recursos, upsert(recurs)),
+    ...options,
+  })
+}
+
+// Deletes a resource with its file and the annotations of its PDF
+export const useRemoveRecurs = (options?: Options<string, string>) => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => api.recursos.remove(id),
+    onSuccess: (id) => {
+      queryClient.setQueryData<Recurs[]>(TemariKeys.recursos, (prev) => prev?.filter((r) => r.id !== id))
+      queryClient.invalidateQueries({ queryKey: AnotacionsKeys.list })
+    },
+    ...options,
+  })
+}
+
+// The file of a resource (only while it's being viewed)
+export const useRecursBlob = (id: string | null) =>
+  useQuery({
+    queryKey: [...TemariKeys.recursos, 'blob', id],
+    queryFn: () => api.recursos.getBlob(id as string),
+    enabled: !!id,
+    gcTime: 0,
+  })

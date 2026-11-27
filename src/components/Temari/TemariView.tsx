@@ -1,4 +1,17 @@
-import { Badge, Box, Button, Flex, Heading, Icon, IconButton, Stack, Text, Tooltip, useToast } from '@chakra-ui/react'
+import {
+  Badge,
+  Box,
+  Button,
+  Flex,
+  Heading,
+  Icon,
+  IconButton,
+  Skeleton,
+  Stack,
+  Text,
+  Tooltip,
+  useToast,
+} from '@chakra-ui/react'
 import { motion, useReducedMotion } from 'framer-motion'
 import { ReactNode, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -14,12 +27,19 @@ import { icons } from '~theme/icons'
 import { spring, STAGGER_MAX, STAGGER_STEP } from '~theme/motion'
 import { formatRanges, pdfForTema, temaNumber } from './logic'
 import { PdfAnotacionsMenu } from './PdfAnotacionsMenu'
-import { useRemovePdfs, useSavePdfs, useSavedPdfs } from './queries'
-import { TemariPdf } from './types'
+import { useRecursos, useRemovePdfs, useSavePdfs, useSavedPdfs } from './queries'
+import { RecursFormModal } from './RecursFormModal'
+import { recursPdfId } from './recursos'
+import { RecursRow } from './RecursRow'
+import { RecursViewer } from './RecursViewer'
+import { Recurs, RecursCategoria, TemariPdf } from './types'
 import { usePdfActions } from './usePdfActions'
 
 type Row = { key: string; num: number | null; nom: string; pdf?: TemariPdf }
 type Batch = { kind: 'save' | 'download'; done: number; total: number }
+// One line of the "per tema" list: an official manual or an extra tema added by the user
+type TemaItem = { key: string; num: number; row?: Required<Row>; recurs?: Recurs }
+type FormState = { categoria: RecursCategoria; recurs: Recurs | null }
 
 const FadeIn = ({ index, children }: { index: number; children: ReactNode }) => {
   const reduce = useReducedMotion()
@@ -215,6 +235,9 @@ export const TemariView = () => {
   const [batch, setBatch] = useState<Batch | null>(null)
   const [isRemoveOpen, setIsRemoveOpen] = useState(false)
   const [onlyAnnotated, setOnlyAnnotated] = useState(false)
+  const { data: recursos = [], isPending: loadingRecursos, isError: recursosError, refetch } = useRecursos()
+  const [form, setForm] = useState<FormState | null>(null)
+  const [viewing, setViewing] = useState<Recurs | null>(null)
 
   // Number of annotations of every annotated PDF
   const anotacionsById = useMemo(() => new Map(anotats.map((a) => [a.id, a.total])), [anotats])
@@ -240,8 +263,23 @@ export const TemariView = () => {
     }))
     return [...fromStructure, ...orphans].sort((a, b) => (a.num ?? 0) - (b.num ?? 0))
   }, [structure.temes, t])
-  const withPdf = rows.filter((r): r is Required<Row> => !!r.pdf)
-  const visible = filtering ? withPdf.filter((r) => countOf(r.pdf) > 0) : withPdf
+  const withPdf = useMemo(() => rows.filter((r): r is Required<Row> => !!r.pdf), [rows])
+  const countOfRecurs = (recurs: Recurs) => anotacionsById.get(recursPdfId(recurs.id)) ?? 0
+  // Official manuals and extra temes together, by number (the official one first)
+  const temaItems = useMemo<TemaItem[]>(
+    () =>
+      [
+        ...withPdf.map((row): TemaItem => ({ key: row.key, num: row.num ?? 0, row })),
+        ...recursos
+          .filter((r) => r.categoria === 'tema')
+          .map((recurs): TemaItem => ({ key: recurs.id, num: recurs.tema ?? 0, recurs })),
+      ].sort((a, b) => a.num - b.num || Number(!!a.recurs) - Number(!!b.recurs)),
+    [withPdf, recursos]
+  )
+  const visible = filtering
+    ? temaItems.filter((it) => (it.row ? countOf(it.row.pdf) : countOfRecurs(it.recurs as Recurs)) > 0)
+    : temaItems
+  const extres = recursos.filter((r) => r.categoria === 'extra')
   // Temes without a manual (legal texts), listed by number in a single note
   const withoutPdf = rows
     .filter((r) => !r.pdf)
@@ -415,19 +453,31 @@ export const TemariView = () => {
         <Box>
           <Flex align='center' justify='space-between' gap={3} mb={3} minH={8}>
             <Heading size='sm'>{t('temari.by_tema', { defaultValue: 'Per tema' })}</Heading>
-            {hasAnnotated && (
+            <Flex gap={2}>
+              {hasAnnotated && (
+                <Button
+                  size='sm'
+                  leftIcon={<Icon as={icons.annotated} />}
+                  variant={filtering ? 'solid' : 'outline'}
+                  colorScheme={filtering ? 'primary' : 'gray'}
+                  borderRadius='full'
+                  aria-pressed={filtering}
+                  onClick={() => setOnlyAnnotated((v) => !v)}
+                >
+                  {t('temari.only_annotated', { defaultValue: 'Només anotats' })}
+                </Button>
+              )}
               <Button
                 size='sm'
-                leftIcon={<Icon as={icons.annotated} />}
-                variant={filtering ? 'solid' : 'outline'}
-                colorScheme={filtering ? 'primary' : 'gray'}
+                leftIcon={<Icon as={icons.add} />}
+                variant='outline'
+                colorScheme='gray'
                 borderRadius='full'
-                aria-pressed={filtering}
-                onClick={() => setOnlyAnnotated((v) => !v)}
+                onClick={() => setForm({ categoria: 'tema', recurs: null })}
               >
-                {t('temari.only_annotated', { defaultValue: 'Només anotats' })}
+                {t('recursos.add_tema', { defaultValue: 'Afegeix un tema' })}
               </Button>
-            )}
+            </Flex>
           </Flex>
           {withoutPdf.length > 0 && !filtering && (
             <Flex align='flex-start' gap={2} fontSize='sm' color='textMuted' mb={3}>
@@ -442,9 +492,20 @@ export const TemariView = () => {
           )}
           {visible.length ? (
             <Stack spacing={2}>
-              {visible.map(({ key, ...row }, i) => (
+              {visible.map(({ key, row, recurs }, i) => (
                 <FadeIn key={key} index={i}>
-                  <PdfRow {...row} anotacions={countOf(row.pdf)} />
+                  {row ? (
+                    <PdfRow num={row.num} nom={row.nom} pdf={row.pdf} anotacions={countOf(row.pdf)} />
+                  ) : (
+                    recurs && (
+                      <RecursRow
+                        recurs={recurs}
+                        anotacions={countOfRecurs(recurs)}
+                        onEdit={(r) => setForm({ categoria: 'tema', recurs: r })}
+                        onView={setViewing}
+                      />
+                    )
+                  )}
                 </FadeIn>
               ))}
             </Stack>
@@ -466,7 +527,93 @@ export const TemariView = () => {
             </Card>
           )}
         </Box>
+
+        <Box>
+          <Flex align='center' justify='space-between' gap={3} mb={1} minH={8}>
+            <Heading size='sm'>{t('recursos.title', { defaultValue: 'Recursos addicionals' })}</Heading>
+            {extres.length > 0 && (
+              <Button
+                size='sm'
+                leftIcon={<Icon as={icons.add} />}
+                variant='outline'
+                colorScheme='gray'
+                borderRadius='full'
+                onClick={() => setForm({ categoria: 'extra', recurs: null })}
+              >
+                {t('recursos.add_short', { defaultValue: 'Afegeix' })}
+              </Button>
+            )}
+          </Flex>
+          <Text fontSize='sm' color='textMuted' mb={3}>
+            {t('recursos.subtitle', {
+              defaultValue:
+                'Material de fora del temari: fitxers, vídeos, imatges o enllaços. Els fitxers es desen només en aquest dispositiu i no van a la còpia de seguretat.',
+            })}
+          </Text>
+          {recursosError ? (
+            <Card>
+              <ElementNotFound
+                icon={icons.warning}
+                title={t('recursos.load_error_title', { defaultValue: 'No hem pogut carregar els teus recursos' })}
+                desc={t('recursos.load_error_desc', {
+                  defaultValue: 'Ho sentim, alguna cosa ha fallat en llegir-los del dispositiu. Torna-ho a provar.',
+                })}
+                action={
+                  <Button leftIcon={<Icon as={icons.reset} />} onClick={() => refetch()}>
+                    {t('recursos.retry', { defaultValue: 'Torna-ho a provar' })}
+                  </Button>
+                }
+              />
+            </Card>
+          ) : loadingRecursos ? (
+            <Stack spacing={2}>
+              {[0, 1].map((i) => (
+                <Skeleton key={i} h={16} borderRadius='card' />
+              ))}
+            </Stack>
+          ) : extres.length ? (
+            <Stack spacing={2}>
+              {extres.map((recurs, i) => (
+                <FadeIn key={recurs.id} index={i}>
+                  <RecursRow
+                    recurs={recurs}
+                    anotacions={countOfRecurs(recurs)}
+                    onEdit={(r) => setForm({ categoria: 'extra', recurs: r })}
+                    onView={setViewing}
+                  />
+                </FadeIn>
+              ))}
+            </Stack>
+          ) : (
+            <Card>
+              <ElementNotFound
+                icon={icons.attach}
+                title={t('recursos.empty_title', { defaultValue: 'Encara no has afegit cap recurs' })}
+                desc={t('recursos.empty_desc', {
+                  defaultValue:
+                    'Aquí tindràs a mà els teus apunts, esquemes, fotos, vídeos o enllaços a webs que t’ajudin a estudiar.',
+                })}
+                action={
+                  <Button
+                    leftIcon={<Icon as={icons.add} />}
+                    onClick={() => setForm({ categoria: 'extra', recurs: null })}
+                  >
+                    {t('recursos.add_first', { defaultValue: 'Afegeix un recurs' })}
+                  </Button>
+                }
+              />
+            </Card>
+          )}
+        </Box>
       </Stack>
+
+      <RecursFormModal
+        isOpen={!!form}
+        onClose={() => setForm(null)}
+        categoria={form?.categoria ?? 'extra'}
+        recurs={form?.recurs}
+      />
+      <RecursViewer recurs={viewing} onClose={() => setViewing(null)} />
 
       <ConfirmDialog
         isOpen={isRemoveOpen}
