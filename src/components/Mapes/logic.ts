@@ -189,6 +189,17 @@ export const colorOf = (map: Record<string, MapaNode>, id: string): MapaColor =>
   return 'primari'
 }
 
+/** Root of the tree that holds a node */
+export const rootOf = (map: Record<string, MapaNode>, id: string): MapaNode | undefined => {
+  let n: MapaNode | undefined = map[id]
+  const seen = new Set<string>()
+  while (n?.pare && map[n.pare] && !seen.has(n.id)) {
+    seen.add(n.id)
+    n = map[n.pare]
+  }
+  return n
+}
+
 /** Depth of a node (roots are 0) */
 export const depthOf = (map: Record<string, MapaNode>, id: string) => {
   let d = 0

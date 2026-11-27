@@ -89,12 +89,13 @@ type ToolRailProps = {
   tool: Tool
   onTool: (t: Tool) => void
   onImage: () => void
+  onCenter: () => void
 }
 
 /**
  * Tools on the left edge: select, pen, highlighter, eraser, shapes and picture
  */
-export const ToolRail = ({ tool, onTool, onImage }: ToolRailProps) => {
+export const ToolRail = ({ tool, onTool, onImage, onCenter }: ToolRailProps) => {
   const { t } = useTranslation()
   const tools: { id: Tool; icon: typeof icons.select; label: string }[] = [
     { id: 'seleccio', icon: icons.select, label: t('mapes.tool.select', { defaultValue: 'Selecciona i mou (Esc)' }) },
@@ -139,6 +140,15 @@ export const ToolRail = ({ tool, onTool, onImage }: ToolRailProps) => {
           icon={<Icon as={icons.image} />}
           onClick={onImage}
         />
+        {/* Phones: the bottom bar is full, so centering lives here (wide screens have it by the zoom) */}
+        <Box display={{ base: 'block', md: 'none' }}>
+          <Box h='1px' bg='border' my={1} mx={2} />
+          <ToolButton
+            label={t('mapes.tool.center', { defaultValue: 'Centra el mapa (Inici)' })}
+            icon={<Icon as={icons.center} />}
+            onClick={onCenter}
+          />
+        </Box>
       </Stack>
     </GlassSurface>
   )
@@ -240,6 +250,7 @@ type ContextBarProps = {
   onZoomIn: () => void
   onZoomOut: () => void
   onFit: () => void
+  onCenter: () => void
 }
 
 /**
@@ -455,6 +466,12 @@ export const ContextBar = (p: ContextBarProps) => {
             label={t('mapes.tool.zoom_in', { defaultValue: 'Apropa (+)' })}
             icon={<Icon as={icons.zoomIn} />}
             onClick={p.onZoomIn}
+            size='sm'
+          />
+          <ToolButton
+            label={t('mapes.tool.center', { defaultValue: 'Centra el mapa (Inici)' })}
+            icon={<Icon as={icons.center} />}
+            onClick={p.onCenter}
             size='sm'
           />
         </Flex>

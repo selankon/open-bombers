@@ -32,6 +32,7 @@ import {
   moveSubtree,
   neighbour,
   newId,
+  rootOf,
   setBranchColor,
   subtreeIds,
   toWorld,
@@ -186,6 +187,15 @@ export const MapaEditor = ({ mapa }: { mapa: MapaMental }) => {
   // ---- Viewport ----
   const fitted = useRef(false)
   const fit = useStable(() => setVp(fitViewport(contentBounds(contentRef.current, sizesRef.current), size.w, size.h)))
+
+  // Centers the main idea of the selected branch (or of the map) keeping the zoom
+  const center = useStable(() => {
+    const c = contentRef.current
+    const root = (selectedId && rootOf(byId(c.nodes), selectedId)) || c.nodes.find((n) => !n.pare)
+    if (root) return setVp((v) => centerOn(v, root.x, root.y, size.w, size.h))
+    const b = contentBounds(c, sizesRef.current)
+    if (b) setVp((v) => centerOn(v, (b.minX + b.maxX) / 2, (b.minY + b.maxY) / 2, size.w, size.h))
+  })
 
   // Show the whole map once the canvas has a size (or its main idea, when the whole map would be too small)
   useEffect(() => {
@@ -501,6 +511,9 @@ export const MapaEditor = ({ mapa }: { mapa: MapaMental }) => {
       case '0':
         handled()
         return fit()
+      case 'Home':
+        handled()
+        return center()
     }
     if (tool !== 'seleccio') return
     switch (e.key) {
@@ -636,7 +649,7 @@ export const MapaEditor = ({ mapa }: { mapa: MapaMental }) => {
         </Box>
       )}
 
-      <ToolRail tool={tool} onTool={setTool} onImage={() => fileRef.current?.click()} />
+      <ToolRail tool={tool} onTool={setTool} onImage={() => fileRef.current?.click()} onCenter={center} />
       <input
         ref={fileRef}
         type='file'
@@ -690,6 +703,7 @@ export const MapaEditor = ({ mapa }: { mapa: MapaMental }) => {
         onZoomIn={() => zoomBy(1)}
         onZoomOut={() => zoomBy(-1)}
         onFit={fit}
+        onCenter={center}
       />
     </Box>
   )

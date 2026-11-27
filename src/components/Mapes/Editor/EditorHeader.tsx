@@ -80,6 +80,7 @@ const ShortcutsHelp = () => {
               />
               <Shortcut keys={['Ctrl', 'Z']} label={t('mapes.key.undo', { defaultValue: 'Desfés' })} />
               <Shortcut keys={['+', '−', '0']} label={t('mapes.key.zoom', { defaultValue: 'Zoom i veure-ho tot' })} />
+              <Shortcut keys={['Inici']} label={t('mapes.key.center', { defaultValue: 'Centra la idea principal' })} />
               <Text fontSize='xs' color='textMuted' pt={1}>
                 {t('mapes.key.mouse', {
                   defaultValue:

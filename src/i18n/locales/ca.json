@@ -272,6 +272,7 @@
     "info_error": "No s’han pogut desar les dades del mapa",
     "info_saved": "Dades desades",
     "key": {
+      "center": "Centra la idea principal",
       "child": "Idea filla",
       "delete": "Elimina la branca",
       "edit": "Edita el text (o comença a escriure)",
@@ -350,6 +351,7 @@
       "add_root": "Afegeix una idea",
       "add_sibling": "Afegeix una idea germana (Enter)",
       "brush": "Color i gruix",
+      "center": "Centra el mapa (Inici)",
       "delete": "Elimina la idea i la seva branca (Supr)",
       "delete_item": "Elimina (Supr)",
       "edit": "Edita el text (F2)",
