@@ -48,6 +48,7 @@ import {
   MapaMental,
   MapaNode,
   MapaTrace,
+  NodeColor,
   NodeSizes,
   Tool,
 } from '../types'
@@ -326,7 +327,21 @@ export const MapaEditor = ({ mapa }: { mapa: MapaMental }) => {
     if (node) apply(onNodes((ns) => updateNode(ns, id, { plegat: !node.plegat })))
   })
 
-  const setColor = useStable((c: MapaColor) => selectedId && apply(onNodes((ns) => setBranchColor(ns, selectedId, c))))
+  // Dragging in the color picker: the whole drag is a single undo step
+  const pickingColor = useRef(false)
+  const setColor = useStable((c: NodeColor) => {
+    pickingColor.current = false
+    if (selectedId) apply(onNodes((ns) => setBranchColor(ns, selectedId, c)))
+  })
+  const previewColor = useStable((c: NodeColor) => {
+    if (!selectedId) return
+    if (!pickingColor.current) {
+      pickingColor.current = true
+      checkpoint()
+    }
+    patch(onNodes((ns) => setBranchColor(ns, selectedId, c)))
+  })
+  const endColorPreview = useStable(() => (pickingColor.current = false))
 
   const setNodeStyle = useStable((p: Partial<Pick<MapaNode, 'forma' | 'emplenat' | 'mida'>>) => {
     if (selectedId) apply(onNodes((ns) => updateNode(ns, selectedId, p)))
@@ -679,6 +694,8 @@ export const MapaEditor = ({ mapa }: { mapa: MapaMental }) => {
               color={colorOf(map, selected.id)}
               isRoot={!selected.pare}
               onColor={setColor}
+              onColorPreview={previewColor}
+              onColorPreviewEnd={endColorPreview}
               onNode={setNodeStyle}
               onBranca={(p) => setBranca(selected.id, p)}
               onEditLabel={() => editLabel(selected.id)}

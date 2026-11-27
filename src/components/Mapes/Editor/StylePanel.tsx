@@ -1,7 +1,23 @@
-import { Box, Button, Flex, Icon, SimpleGrid, Stack, Switch, Text } from '@chakra-ui/react'
+import {
+  Box,
+  Button,
+  chakra,
+  Flex,
+  Icon,
+  SimpleGrid,
+  Slider,
+  SliderFilledTrack,
+  SliderThumb,
+  SliderTrack,
+  Stack,
+  Switch,
+  Text,
+} from '@chakra-ui/react'
 import { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { icons } from '~theme/icons'
+import { MAPA } from '~utils/constants'
+import { colorLook, customColor, isCustomColor, parseCustom } from '../colors'
 import {
   BRANCA_ESTILS,
   BRANCA_GRUIXOS,
@@ -17,6 +33,7 @@ import {
   NODE_MIDES,
   NodeEmplenat,
   NodeForma,
+  NodeColor,
   NodeMida,
 } from '../types'
 
@@ -114,6 +131,137 @@ export const ColorSwatches = ({
   )
 }
 
+// Checkerboard behind see-through colors
+const CHECKER = {
+  bgImage: 'repeating-conic-gradient(var(--chakra-colors-border) 0% 25%, var(--chakra-colors-surface) 0% 50%)',
+  bgSize: '8px 8px',
+}
+
+const swatchRing = (active: boolean) =>
+  active ? '0 0 0 2px var(--chakra-colors-surface), 0 0 0 4px var(--chakra-colors-accent)' : 'none'
+
+/**
+ * Any color from the system picker, with its opacity, plus a transparent shortcut.
+ * Dragging in the picker or the slider previews the color live (one undo step).
+ */
+const CustomColorPicker = ({
+  value,
+  onChange,
+  onPreview,
+  onPreviewEnd,
+}: {
+  value: NodeColor
+  onChange: (c: NodeColor) => void
+  onPreview: (c: NodeColor) => void
+  onPreviewEnd: () => void
+}) => {
+  const { t } = useTranslation()
+  const custom = isCustomColor(value) ? value : null
+  const rgba = custom ? parseCustom(custom) : null
+  const rgb = custom ? custom.slice(0, 7) : MAPA.CUSTOM_COLOR
+  const alpha = rgba?.a ?? 1
+  const transparent = !!rgba && rgba.a === 0
+  const label = t('mapes.style.custom_color', { defaultValue: 'Tria qualsevol color' })
+  const transparentLabel = t('mapes.style.transparent', { defaultValue: 'Transparent' })
+
+  return (
+    <Stack spacing={3} mt={3}>
+      <Flex gap={2} align='center'>
+        <Box
+          position='relative'
+          w={8}
+          h={8}
+          borderRadius='full'
+          overflow='hidden'
+          title={label}
+          boxShadow={swatchRing(!!custom && !transparent)}
+          sx={CHECKER}
+          _focusWithin={{ boxShadow: 'outline' }}
+        >
+          <Flex
+            position='absolute'
+            inset={0}
+            align='center'
+            justify='center'
+            bg={custom && !transparent ? colorLook(custom).solid : 'surfaceMuted'}
+            borderWidth={custom && !transparent ? 0 : '1px'}
+            borderColor='border'
+            borderRadius='full'
+          >
+            <Icon
+              as={custom && !transparent ? icons.check : icons.customColor}
+              color={custom && !transparent ? colorLook(custom).onSolid : 'textMuted'}
+              boxSize={4}
+            />
+          </Flex>
+          <chakra.input
+            type='color'
+            aria-label={label}
+            value={rgb}
+            onChange={(e) => onPreview(customColor(e.target.value, transparent ? 1 : alpha))}
+            onBlur={onPreviewEnd}
+            position='absolute'
+            inset={0}
+            w='full'
+            h='full'
+            opacity={0}
+            cursor='pointer'
+          />
+        </Box>
+        <Button
+          aria-label={transparentLabel}
+          title={transparentLabel}
+          aria-pressed={transparent}
+          onClick={() => onChange(customColor(rgb, 0))}
+          minW={8}
+          w={8}
+          h={8}
+          p={0}
+          borderRadius='full'
+          borderWidth='1px'
+          borderColor='border'
+          sx={CHECKER}
+          _hover={{ opacity: 0.85 }}
+          boxShadow={swatchRing(transparent)}
+        >
+          {transparent && <Icon as={icons.check} color='textPrimary' boxSize={4} />}
+        </Button>
+        <Text fontSize='xs' color='textMuted' flex={1}>
+          {custom
+            ? t('mapes.style.custom_on', { defaultValue: 'Color personalitzat' })
+            : t('mapes.style.custom_hint', { defaultValue: 'Color personalitzat o transparent' })}
+        </Text>
+      </Flex>
+      {custom && (
+        <Flex align='center' gap={3}>
+          <Text as='label' id='mapa-opacitat' fontSize='xs' color='textMuted' flexShrink={0}>
+            {t('mapes.style.opacity', { defaultValue: 'Opacitat' })}
+          </Text>
+          <Slider
+            aria-labelledby='mapa-opacitat'
+            min={0}
+            max={100}
+            step={MAPA.OPACITY_STEP}
+            value={Math.round(alpha * 100)}
+            onChange={(v) => onPreview(customColor(rgb, v / 100))}
+            onChangeEnd={onPreviewEnd}
+            colorScheme='primary'
+            focusThumbOnChange={false}
+          >
+            <SliderTrack>
+              <SliderFilledTrack />
+            </SliderTrack>
+            <SliderThumb />
+          </Slider>
+          <Text fontSize='xs' color='textMuted' w={9} textAlign='right' sx={{ fontVariantNumeric: 'tabular-nums' }}>
+            {Math.round(alpha * 100)}%
+          </Text>
+        </Flex>
+      )}
+    </Stack>
+  )
+}
+
 const FormaPreview = ({ forma }: { forma: NodeForma }) => (
   <Box
     w={forma === 'cercle' ? 5 : 7}
@@ -176,9 +324,11 @@ const TracatPreview = ({ tracat }: { tracat: BrancaTracat }) => (
 
 type StylePanelProps = {
   node: MapaNode
-  color: MapaColor
+  color: NodeColor
   isRoot: boolean
-  onColor: (c: MapaColor) => void
+  onColor: (c: NodeColor) => void
+  onColorPreview: (c: NodeColor) => void
+  onColorPreviewEnd: () => void
   onNode: (patch: Partial<Pick<MapaNode, 'forma' | 'emplenat' | 'mida'>>) => void
   onBranca: (patch: Partial<BrancaStyle>) => void
   onEditLabel: () => void
@@ -187,7 +337,17 @@ type StylePanelProps = {
 /**
  * Look of the selected idea and of the line that reaches it
  */
-export const StylePanel = ({ node, color, isRoot, onColor, onNode, onBranca, onEditLabel }: StylePanelProps) => {
+export const StylePanel = ({
+  node,
+  color,
+  isRoot,
+  onColor,
+  onColorPreview,
+  onColorPreviewEnd,
+  onNode,
+  onBranca,
+  onEditLabel,
+}: StylePanelProps) => {
   const { t } = useTranslation()
   const forma = node.forma ?? 'rectangle'
   const emplenat = node.emplenat ?? (isRoot ? 'suau' : 'buit')
@@ -225,7 +385,13 @@ export const StylePanel = ({ node, color, isRoot, onColor, onNode, onBranca, onE
   return (
     <Stack spacing={4}>
       <Section title={t('mapes.style.color', { defaultValue: 'Color de la branca' })}>
-        <ColorSwatches value={color} onChange={onColor} />
+        <ColorSwatches value={isCustomColor(color) ? null : color} onChange={onColor} />
+        <CustomColorPicker
+          value={color}
+          onChange={onColor}
+          onPreview={onColorPreview}
+          onPreviewEnd={onColorPreviewEnd}
+        />
       </Section>
       <Section title={t('mapes.style.shape', { defaultValue: 'Forma' })}>
         <SimpleGrid columns={4} spacing={2}>

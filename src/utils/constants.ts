@@ -111,6 +111,10 @@ export const MAPA = {
   EXPORT_PNG_SCALE: 2,
   EXPORT_MAX_PX: 8000,
   EXPORT_PDF_PX: 2400,
+  // First value of the custom color picker when the idea has a palette color
+  CUSTOM_COLOR: '#0e7c86',
+  // Opacity step of the custom color (%)
+  OPACITY_STEP: 5,
 }
 
 export const MAPA_PNG_EXT = '.png'

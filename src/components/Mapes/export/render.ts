@@ -1,4 +1,5 @@
 import { MAPA } from '~utils/constants'
+import { colorLook } from '../colors'
 import { absPoints, contentBounds, sizeOf, visibleTraces } from '../content'
 import { edgeGeometry, formaPaths } from '../geometry'
 import { HIGHLIGHTER_OPACITY, strokePath } from '../ink'
@@ -122,7 +123,7 @@ export const renderMapa = async (c: MapaContingut, sizes: NodeSizes, { resolve, 
     const g = edgeGeometry(parent, n, sizeOf(sizes, parent.id), sizeOf(sizes, n.id), depth)
     ctx.save()
     ctx.globalAlpha = depth <= 1 ? 0.9 : 0.7
-    ctx.strokeStyle = resolve(`mapa.${colorOf(map, n.id)}`)
+    ctx.strokeStyle = resolve(colorLook(colorOf(map, n.id)).line)
     ctx.fillStyle = ctx.strokeStyle
     ctx.lineWidth = g.width
     ctx.setLineDash(g.dash ?? [])

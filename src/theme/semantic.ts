@@ -84,6 +84,8 @@ export const semanticColors = {
   'mapa.lila.solid': { default: '#6D28D9', _dark: '#6D28D9' },
   // Text on solid fills, labels on lines, selection outline of drawings
   'mapa.onSolid': { default: 'white', _dark: 'white' },
+  // Text on light custom fills
+  'mapa.onLight': { default: '#0F172A', _dark: '#0F172A' },
   'mapa.label': { default: 'rgba(255,255,255,0.92)', _dark: 'rgba(21,28,44,0.92)' },
   'mapa.primari': { default: 'primary.500', _dark: 'primary.300' },
   'mapa.primari.bg': { default: 'primary.50', _dark: 'rgba(255,255,255,0.06)' },

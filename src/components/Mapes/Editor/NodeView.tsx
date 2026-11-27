@@ -5,13 +5,14 @@ import { useTranslation } from 'react-i18next'
 import { icons } from '~theme/icons'
 import { duration, spring } from '~theme/motion'
 import { LINE_HEIGHT, nodeLook } from '../nodeLook'
-import { MapaColor, MapaNode } from '../types'
+import { colorLook, cssColor } from '../colors'
+import { MapaNode, NodeColor } from '../types'
 
 const MotionBox = motion(Box)
 
 type NodeViewProps = {
   node: MapaNode
-  color: MapaColor
+  color: NodeColor
   isRoot: boolean
   // Children count (0: no fold toggle)
   childCount: number
@@ -104,7 +105,9 @@ export const NodeView = memo(
     }
 
     const text = isEditing ? draft : node.text
-    const line = `var(--chakra-colors-mapa-${color})`
+    const c = colorLook(color)
+    const line = cssColor(c.line)
+    const strong = cssColor(c.strong)
     const folded = !!node.plegat && childCount > 0
     const round = look.forma === 'cercle'
     const radius =
@@ -123,7 +126,7 @@ export const NodeView = memo(
       lineHeight: LINE_HEIGHT,
       textAlign: 'center' as const,
     }
-    const ring = `0 0 0 3px var(--chakra-colors-mapa-${color}-bg), 0 0 0 5px ${line}`
+    const ring = `0 0 0 3px ${cssColor(c.bg)}, 0 0 0 5px ${strong}`
 
     return (
       <MotionBox
@@ -160,7 +163,7 @@ export const NodeView = memo(
           px={`${look.padX}px`}
           py={`${look.padY}px`}
           borderRadius={radius}
-          bg={isDropTarget ? `mapa.${color}.bg` : (look.fill ?? 'transparent')}
+          bg={isDropTarget ? c.bg : (look.fill ?? 'transparent')}
           borderWidth={`${look.borderPx}px`}
           borderColor={look.stroke ? line : 'transparent'}
           boxShadow={
@@ -232,8 +235,8 @@ export const NodeView = memo(
               borderRadius='full'
               bg='surface'
               borderWidth='1.5px'
-              borderColor={line}
-              color={line}
+              borderColor={strong}
+              color={strong}
               align='center'
               justify='center'
               fontSize='2xs'

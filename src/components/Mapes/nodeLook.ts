@@ -1,4 +1,5 @@
-import { MapaColor, MapaNode, NodeEmplenat, NodeForma, NodeMida } from './types'
+import { colorLook } from './colors'
+import { MapaNode, NodeColor, NodeEmplenat, NodeForma, NodeMida } from './types'
 
 /**
  * Resolved look of an idea, shared by the editor (Chakra) and the export (canvas) so both match
@@ -23,13 +24,14 @@ export interface NodeLook {
   // Max text width before wrapping (px)
   maxW: number
   minW: number
-  // Tokens
+  // Tokens or CSS colors
   fill: string | null
   stroke: string | null
   text: string
 }
 
-export const nodeLook = (node: MapaNode, isRoot: boolean, color: MapaColor): NodeLook => {
+export const nodeLook = (node: MapaNode, isRoot: boolean, color: NodeColor): NodeLook => {
+  const c = colorLook(color)
   const forma = node.forma ?? 'rectangle'
   const emplenat = node.emplenat ?? (isRoot ? 'suau' : 'buit')
   const mida = node.mida ?? 'm'
@@ -45,16 +47,9 @@ export const nodeLook = (node: MapaNode, isRoot: boolean, color: MapaColor): Nod
     borderPx: forma === 'text' ? 0 : isRoot ? 2 : 1.5,
     maxW: round ? 140 : isRoot ? 280 : 240,
     minW: round ? 72 : isRoot ? 96 : 64,
-    fill:
-      emplenat === 'ple'
-        ? `mapa.${color}.solid`
-        : emplenat === 'suau'
-          ? `mapa.${color}.bg`
-          : forma === 'text'
-            ? null
-            : 'surface',
-    stroke: forma === 'text' ? null : `mapa.${color}`,
-    text: emplenat === 'ple' ? 'mapa.onSolid' : 'textPrimary',
+    fill: emplenat === 'ple' ? c.solid : emplenat === 'suau' ? c.bg : forma === 'text' ? null : 'surface',
+    stroke: forma === 'text' ? null : c.line,
+    text: emplenat === 'ple' ? c.onSolid : 'textPrimary',
   }
 }
 

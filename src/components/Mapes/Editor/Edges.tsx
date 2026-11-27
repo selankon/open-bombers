@@ -1,4 +1,5 @@
 import { memo, MouseEvent, PointerEvent } from 'react'
+import { colorLook, cssColor } from '../colors'
 import { sizeOf } from '../content'
 import { edgeGeometry } from '../geometry'
 import { colorOf, depthOf } from '../logic'
@@ -31,7 +32,7 @@ export const Edges = memo(({ nodes, map, sizes, selectedId, interactive, onSelec
       if (!parent) return null
       const depth = depthOf(map, n.id)
       const g = edgeGeometry(parent, n, sizeOf(sizes, parent.id), sizeOf(sizes, n.id), depth)
-      const color = `var(--chakra-colors-mapa-${colorOf(map, n.id)})`
+      const color = cssColor(colorLook(colorOf(map, n.id)).line)
       const selected = n.id === selectedId
       return (
         <g key={n.id} opacity={selected ? 1 : depth <= 1 ? 0.9 : 0.7}>

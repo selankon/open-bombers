@@ -2,6 +2,9 @@
 // (soft tint) and `mapa.<color>.solid` (strong fill with white text)
 export const MAPA_COLORS = ['tinta', 'primari', 'blau', 'verd', 'groc', 'vermell', 'lila'] as const
 export type MapaColor = (typeof MAPA_COLORS)[number]
+// Color picked by the user for an idea: `#rrggbb` or `#rrggbbaa` (see-through / transparent)
+export type CustomColor = `#${string}`
+export type NodeColor = MapaColor | CustomColor
 
 // Look of an idea
 export const NODE_FORMES = ['rectangle', 'pindola', 'cercle', 'text'] as const
@@ -40,7 +43,7 @@ export interface MapaNode {
   x: number
   y: number
   // Own color; when missing the node uses the color of its nearest colored ancestor
-  color?: MapaColor
+  color?: NodeColor
   // Hides the descendants
   plegat?: boolean
   // Style (defaults: rectangle, empty fill except roots, medium text)

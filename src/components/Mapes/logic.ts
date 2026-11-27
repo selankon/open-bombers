@@ -1,3 +1,4 @@
+import { isNodeColor } from './colors'
 import { temaShortCode } from '~components/Planificacio/structure'
 import { Structure, Tema } from '~components/Planificacio/types'
 import { MAPA } from '~utils/constants'
@@ -8,6 +9,7 @@ import {
   FORMA_TIPUS,
   MAPA_COLORS,
   MapaColor,
+  NodeColor,
   MapaForma,
   MapaImatge,
   MapaMental,
@@ -57,7 +59,7 @@ const migrateNode = (n: any): MapaNode => {
     text: typeof n.text === 'string' ? n.text : '',
     x: num(n.x),
     y: num(n.y),
-    ...(isColor(n.color) ? { color: n.color } : {}),
+    ...(isNodeColor(n.color) ? { color: n.color } : {}),
     ...(n.plegat ? { plegat: true } : {}),
     ...(oneOf(NODE_FORMES, n.forma) ? { forma: n.forma } : {}),
     ...(oneOf(NODE_EMPLENATS, n.emplenat) ? { emplenat: n.emplenat } : {}),
@@ -178,7 +180,7 @@ export const visibleNodes = (nodes: MapaNode[]) => {
 }
 
 /** Color of a node: its own or the nearest colored ancestor's */
-export const colorOf = (map: Record<string, MapaNode>, id: string): MapaColor => {
+export const colorOf = (map: Record<string, MapaNode>, id: string): NodeColor => {
   let n: MapaNode | undefined = map[id]
   const seen = new Set<string>()
   while (n && !seen.has(n.id)) {
@@ -307,7 +309,7 @@ export const attachTo = (nodes: MapaNode[], id: string, parentId: string) => {
 }
 
 /** Color for a whole branch: the node gets it and its descendants follow it */
-export const setBranchColor = (nodes: MapaNode[], id: string, color: MapaColor) => {
+export const setBranchColor = (nodes: MapaNode[], id: string, color: NodeColor) => {
   const ids = subtreeIds(nodes, id)
   return nodes.map((n) => {
     if (n.id === id) return { ...n, color }
